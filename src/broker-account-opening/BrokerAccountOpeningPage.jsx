@@ -4,7 +4,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid2';
-import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import {
@@ -41,7 +40,6 @@ export default function BrokerAccountOpeningPage() {
   const [uploadedDocuments, setUploadedDocuments] = useState({});
   const [submitConfirmed, setSubmitConfirmed] = useState(false);
   const [submittedApplication, setSubmittedApplication] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success', key: 0 });
 
   const selectedBroker = useMemo(
     () => brokers.find((broker) => broker.id === selectedBrokerId) ?? null,
@@ -62,16 +60,11 @@ export default function BrokerAccountOpeningPage() {
     return false;
   }, [activeStep, allDocumentsUploaded, feeConfirmed, selectedBroker, submitConfirmed, submittedApplication]);
 
-  const showMessage = (message, severity = 'success') => {
-    setSnackbar((current) => ({ open: true, message, severity, key: current.key + 1 }));
-  };
-
   const handleSelectBroker = (broker) => {
     setSelectedBrokerId(broker.id);
     setFeeConfirmed(false);
     setUploadedDocuments({});
     setSubmitConfirmed(false);
-    showMessage(`已选择 ${broker.name}`);
   };
 
   const handleNext = () => {
@@ -93,7 +86,6 @@ export default function BrokerAccountOpeningPage() {
         uploadedAt: new Date().toISOString(),
       },
     }));
-    showMessage(`${documentName} 已上传`);
   };
 
   const handleDeleteUpload = (documentName) => {
@@ -102,7 +94,6 @@ export default function BrokerAccountOpeningPage() {
       delete next[documentName];
       return next;
     });
-    showMessage(`${documentName} 已删除`, 'info');
   };
 
   const handleSubmit = () => {
@@ -113,7 +104,6 @@ export default function BrokerAccountOpeningPage() {
       brokerName: selectedBroker.name,
       submittedAt: formatSubmitTime(now),
     });
-    showMessage('开户申请已提交');
   };
 
   const handleReset = () => {
@@ -126,7 +116,7 @@ export default function BrokerAccountOpeningPage() {
   };
 
   const handleViewProgress = () => {
-    showMessage('申请进度页面将在后续路由中打开', 'info');
+    return undefined;
   };
 
   const renderStepContent = () => {
@@ -244,22 +234,6 @@ export default function BrokerAccountOpeningPage() {
         </Grid>
       </Stack>
 
-      <Snackbar
-        key={snackbar.key}
-        open={snackbar.open}
-        autoHideDuration={2200}
-        onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          variant="filled"
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Container>
   );
 }
