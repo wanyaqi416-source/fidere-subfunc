@@ -60,7 +60,7 @@ const theme = createTheme({
     button: {
       textTransform: 'none',
       fontWeight: 600,
-      fontSize: 14,
+      fontSize: 13,
       lineHeight: 1.2,
       letterSpacing: 0,
     },
@@ -89,6 +89,29 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 6,
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          padding: 5,
+        },
+      },
+    },
+    MuiSvgIcon: {
+      defaultProps: {
+        fontSize: 'small',
+      },
+      styleOverrides: {
+        fontSizeSmall: {
+          fontSize: 18,
+        },
+        fontSizeMedium: {
+          fontSize: 20,
+        },
+        fontSizeLarge: {
+          fontSize: 28,
         },
       },
     },

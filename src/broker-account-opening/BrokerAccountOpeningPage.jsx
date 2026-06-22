@@ -8,6 +8,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import {
   ApplicationSummary,
+  ApplicationProgressPage,
   BrokerCard,
   BrokerStepper,
   DocumentUploadStep,
@@ -15,9 +16,7 @@ import {
   ReviewSubmitStep,
   SuccessState,
 } from './components';
-import { brokerSteps, brokers } from './brokers';
-
-const nextLabels = ['下一步：确认费用', '下一步：上传资料', '下一步：提交审核', '提交审核'];
+import { brokerDocumentRequirements, brokerSteps, brokers } from './brokers';
 
 function formatSubmitTime(date) {
   return new Intl.DateTimeFormat('zh-Hans-CN', {
@@ -34,12 +33,13 @@ function createApplicationId(date) {
 }
 
 export default function BrokerAccountOpeningPage() {
-  const [activeStep, setActiveStep] = useState(0);
-  const [selectedBrokerId, setSelectedBrokerId] = useState('');
+  const [activeStep, setActiveStep] = useState(1);
+  const [selectedBrokerId, setSelectedBrokerId] = useState('webull');
   const [feeConfirmed, setFeeConfirmed] = useState(false);
   const [uploadedDocuments, setUploadedDocuments] = useState({});
   const [submitConfirmed, setSubmitConfirmed] = useState(false);
   const [submittedApplication, setSubmittedApplication] = useState(null);
+  const [submittedView, setSubmittedView] = useState('success');
 
   const selectedBroker = useMemo(
     () => brokers.find((broker) => broker.id === selectedBrokerId) ?? null,
@@ -48,7 +48,9 @@ export default function BrokerAccountOpeningPage() {
 
   const allDocumentsUploaded = useMemo(() => {
     if (!selectedBroker) return false;
-    return selectedBroker.requiredDocuments.every((documentName) => uploadedDocuments[documentName]);
+    const requiredDocuments = brokerDocumentRequirements[selectedBroker.id] ?? [];
+    if (requiredDocuments.length === 0) return false;
+    return requiredDocuments.every((documentItem) => uploadedDocuments[documentItem.id]?.status === 'uploaded');
   }, [selectedBroker, uploadedDocuments]);
 
   const canProceed = useMemo(() => {
@@ -76,22 +78,23 @@ export default function BrokerAccountOpeningPage() {
     setActiveStep((current) => Math.max(current - 1, 0));
   };
 
-  const handleUpload = (documentName, file) => {
+  const handleUpload = (documentId, file) => {
     setUploadedDocuments((current) => ({
       ...current,
-      [documentName]: {
-        name: file.name,
-        size: file.size,
-        type: file.type,
+      [documentId]: {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
         uploadedAt: new Date().toISOString(),
+        status: 'uploaded',
       },
     }));
   };
 
-  const handleDeleteUpload = (documentName) => {
+  const handleDeleteUpload = (documentId) => {
     setUploadedDocuments((current) => {
       const next = { ...current };
-      delete next[documentName];
+      delete next[documentId];
       return next;
     });
   };
@@ -104,6 +107,7 @@ export default function BrokerAccountOpeningPage() {
       brokerName: selectedBroker.name,
       submittedAt: formatSubmitTime(now),
     });
+    setSubmittedView('success');
   };
 
   const handleReset = () => {
@@ -113,14 +117,29 @@ export default function BrokerAccountOpeningPage() {
     setUploadedDocuments({});
     setSubmitConfirmed(false);
     setSubmittedApplication(null);
+    setSubmittedView('success');
   };
 
   const handleViewProgress = () => {
-    return undefined;
+    setSubmittedView('progress');
+  };
+
+  const handleBackToSubmittedResult = () => {
+    setSubmittedView('success');
   };
 
   const renderStepContent = () => {
     if (submittedApplication) {
+      if (submittedView === 'progress') {
+        return (
+          <ApplicationProgressPage
+            application={submittedApplication}
+            onBackToResult={handleBackToSubmittedResult}
+            onBackToAccounts={handleReset}
+          />
+        );
+      }
+
       return (
         <SuccessState
           application={submittedApplication}
@@ -156,7 +175,7 @@ export default function BrokerAccountOpeningPage() {
               variant="contained"
               disabled={!selectedBroker}
               onClick={handleNext}
-              sx={{ minWidth: 160, height: 46, whiteSpace: 'nowrap', lineHeight: 1 }}
+              sx={{ minWidth: 144, height: 40, whiteSpace: 'nowrap', lineHeight: 1 }}
             >
               下一步：确认费用
             </Button>
@@ -207,31 +226,40 @@ export default function BrokerAccountOpeningPage() {
   };
 
   return (
-    <Container maxWidth="lg" sx={(theme) => ({ py: { xs: theme.spacing(2.5), md: theme.spacing(4) } })}>
+    <Container
+      component="main"
+      maxWidth="lg"
+      sx={(theme) => ({
+        flex: 1,
+        pt: { xs: theme.spacing(2.5), md: theme.spacing(4) },
+        pb: { xs: theme.spacing(14), md: theme.spacing(6) },
+      })}
+    >
       <Stack spacing={3}>
-        {!submittedApplication ? <BrokerStepper activeStep={activeStep} /> : null}
+        {!submittedApplication && activeStep !== 2 ? <BrokerStepper activeStep={activeStep} /> : null}
 
-        <Grid container spacing={3} alignItems="flex-start">
-          <Grid size={{ xs: 12, md: 7.5, lg: 8 }}>{renderStepContent()}</Grid>
+        {!submittedApplication && activeStep === 2 ? (
+          renderStepContent()
+        ) : (
+          <Grid container spacing={3} alignItems="flex-start">
+            <Grid size={{ xs: 12, md: 7.5, lg: 8 }}>{renderStepContent()}</Grid>
 
-          <Grid size={{ xs: 12, md: 4.5, lg: 4 }}>
-            <Stack spacing={3} sx={{ position: { md: 'sticky' }, top: { md: 24 } }}>
-              <ApplicationSummary
-                selectedBroker={selectedBroker}
-                activeStep={activeStep}
-                canProceed={canProceed}
-                nextLabel={nextLabels[activeStep]}
-                onNext={activeStep === 3 ? handleSubmit : handleNext}
-                submittedApplication={submittedApplication}
-              />
-              {!submittedApplication ? (
-                <Alert severity="info">
-                  FIDERE Trust 将协助完成资料预审、券商对接与开户进度更新。
-                </Alert>
-              ) : null}
-            </Stack>
+            <Grid size={{ xs: 12, md: 4.5, lg: 4 }}>
+              <Stack spacing={3} sx={{ position: { md: 'sticky' }, top: { md: 24 } }}>
+                <ApplicationSummary
+                  selectedBroker={selectedBroker}
+                  activeStep={activeStep}
+                  submittedApplication={submittedApplication}
+                />
+                {!submittedApplication ? (
+                  <Alert severity="info">
+                    FIDERE Trust 将协助完成资料预审、券商对接与开户进度更新。
+                  </Alert>
+                ) : null}
+              </Stack>
+            </Grid>
           </Grid>
-        </Grid>
+        )}
       </Stack>
 
     </Container>

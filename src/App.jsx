@@ -118,7 +118,7 @@ function Footer() {
         >
           <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1.5}>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <HelpOutline sx={{ color: 'text.secondary', fontSize: 20 }} />
+              <HelpOutline sx={{ color: 'text.secondary', fontSize: 18 }} />
               <Typography variant="caption" color="text.secondary">
                 需要帮助？如有疑问或需要协助，请随时联系我们的客服团队。
               </Typography>
@@ -146,7 +146,7 @@ function Footer() {
 
 export default function App() {
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       <Header />
       <BrokerAccountOpeningPage />
       <Footer />
