@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import {
   ApplicationSummary,
   ApplicationProgressPage,
+  BrokerAccountOverviewPage,
   BrokerCard,
   BrokerStepper,
   DocumentUploadStep,
@@ -17,6 +18,19 @@ import {
   SuccessState,
 } from './components';
 import { brokerDocumentRequirements, brokerSteps, brokers } from './brokers';
+
+const statusAlerts = {
+  under_review: {
+    severity: 'info',
+    title: '开户申请审核中',
+    message: '您的开户申请正在审核中，请留意 FIDERE Trust 的后续通知。',
+  },
+  action_required: {
+    severity: 'warning',
+    title: '需补充资料',
+    message: '当前开户申请需要补充资料，请根据页面提示更新文件后继续提交。',
+  },
+};
 
 function formatSubmitTime(date) {
   return new Intl.DateTimeFormat('zh-Hans-CN', {
@@ -32,7 +46,7 @@ function createApplicationId(date) {
   return `BRK-${date.getFullYear()}-0001`;
 }
 
-export default function BrokerAccountOpeningPage() {
+export default function BrokerAccountOpeningPage({ accountStatus = 'opening' }) {
   const [activeStep, setActiveStep] = useState(1);
   const [selectedBrokerId, setSelectedBrokerId] = useState('webull');
   const [feeConfirmed, setFeeConfirmed] = useState(false);
@@ -127,6 +141,24 @@ export default function BrokerAccountOpeningPage() {
   const handleBackToSubmittedResult = () => {
     setSubmittedView('success');
   };
+
+  if (accountStatus === 'opened') {
+    return (
+      <Container
+        component="main"
+        maxWidth={false}
+        sx={(theme) => ({
+          flex: 1,
+          width: '100%',
+          maxWidth: 1200,
+          pt: { xs: theme.spacing(2.5), md: theme.spacing(4.5) },
+          pb: { xs: theme.spacing(8), md: theme.spacing(7) },
+        })}
+      >
+        <BrokerAccountOverviewPage />
+      </Container>
+    );
+  }
 
   const renderStepContent = () => {
     if (submittedApplication) {
@@ -225,17 +257,30 @@ export default function BrokerAccountOpeningPage() {
     return null;
   };
 
+  const statusAlert = statusAlerts[accountStatus];
+
   return (
     <Container
       component="main"
-      maxWidth="lg"
+      maxWidth={false}
       sx={(theme) => ({
         flex: 1,
-        pt: { xs: theme.spacing(2.5), md: theme.spacing(4) },
-        pb: { xs: theme.spacing(14), md: theme.spacing(6) },
+        width: '100%',
+        maxWidth: 1200,
+        pt: { xs: theme.spacing(2.5), md: theme.spacing(4.5) },
+        pb: { xs: theme.spacing(14), md: theme.spacing(7) },
       })}
     >
       <Stack spacing={3}>
+        {statusAlert ? (
+          <Alert severity={statusAlert.severity}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {statusAlert.title}
+            </Typography>
+            <Typography variant="body2">{statusAlert.message}</Typography>
+          </Alert>
+        ) : null}
+
         {!submittedApplication && activeStep !== 2 ? <BrokerStepper activeStep={activeStep} /> : null}
 
         {!submittedApplication && activeStep === 2 ? (

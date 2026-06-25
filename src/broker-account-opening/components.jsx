@@ -6,15 +6,28 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
+import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid2';
+import InputLabel from '@mui/material/InputLabel';
 import LinearProgress from '@mui/material/LinearProgress';
+import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
+import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Stepper from '@mui/material/Stepper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -46,6 +59,18 @@ const cardSx = {
 const submitButtonSx = {
   ...buttonSx,
   minWidth: 144,
+};
+
+const confirmationControlSx = {
+  alignItems: 'center',
+  m: 0,
+  gap: 1.5,
+  '& .MuiCheckbox-root': { p: 0 },
+  '& .MuiFormControlLabel-label': {
+    display: 'flex',
+    alignItems: 'center',
+    minHeight: 24,
+  },
 };
 
 function formatFee(broker) {
@@ -121,6 +146,558 @@ function MetaChips({ title, values }) {
         ))}
       </Stack>
     </Stack>
+  );
+}
+
+const brokerAccountDashboardData = {
+  brokerName: 'Webull 微牛证券',
+  accountName: 'Webull Securities Account',
+  accountNumber: 'WB-****-2841',
+  accountStatus: 'Active',
+  accountType: 'Individual Account',
+  currencies: 'USD / HKD',
+  openedAt: '2026-06-22',
+  updatedAt: '2026-06-22 10:30',
+  trustAccount: 'FIDERE Trust Account',
+  trustRelation: '该券商账户已与您的 FIDERE Trust 信托账户完成关联，用于账户信息查看与内部资金划转申请。',
+  balances: [
+    { title: 'Net Asset Value', amount: 'USD 125,420.80', helper: '总资产净值' },
+    { title: 'Available Cash', amount: 'USD 25,000.00', helper: '可用现金' },
+    { title: 'Invested Amount', amount: 'USD 100,420.80', helper: '已投资金额' },
+    { title: 'Pending Settlement', amount: 'USD 0.00', helper: '待结算资金' },
+    { title: 'Trust Available Balance', amount: 'USD 80,000.00', helper: '信托账户可转入余额' },
+  ],
+  holdings: [
+    {
+      securityName: 'Apple Inc.',
+      ticker: 'AAPL',
+      market: 'NASDAQ',
+      quantity: '20',
+      marketValue: 'USD 4,200.00',
+      cost: 'USD 3,880.00',
+      unrealizedPl: '+USD 320.00',
+      allocation: '3.35%',
+    },
+    {
+      securityName: 'SPDR S&P 500 ETF',
+      ticker: 'SPY',
+      market: 'NYSE',
+      quantity: '15',
+      marketValue: 'USD 7,800.00',
+      cost: 'USD 7,260.00',
+      unrealizedPl: '+USD 540.00',
+      allocation: '6.22%',
+    },
+    {
+      securityName: 'US Treasury Bill',
+      ticker: 'T-Bill',
+      market: 'Fixed Income',
+      quantity: '50,000',
+      marketValue: 'USD 49,820.00',
+      cost: 'USD 50,000.00',
+      unrealizedPl: '-USD 180.00',
+      allocation: '39.72%',
+    },
+  ],
+  transferRecords: [
+    {
+      date: '2026-06-20',
+      type: 'Transfer In',
+      sourceAccount: 'FIDERE Trust Account',
+      targetAccount: 'Webull Account',
+      currency: 'USD',
+      amount: '50,000.00',
+      status: 'Completed',
+      reference: 'FT-WB-20260620-001',
+    },
+    {
+      date: '2026-06-18',
+      type: 'Transfer Out',
+      sourceAccount: 'Webull Account',
+      targetAccount: 'FIDERE Trust Account',
+      currency: 'USD',
+      amount: '10,000.00',
+      status: 'Processing',
+      reference: 'WB-FT-20260618-002',
+    },
+  ],
+};
+
+const transferDirections = {
+  trustToBroker: {
+    title: '从信托账户转入券商账户',
+    helper: 'Transfer In from Trust Account',
+    sourceAccount: 'FIDERE Trust Account',
+    targetAccount: 'Webull Account',
+  },
+  brokerToTrust: {
+    title: '从券商账户转出至信托账户',
+    helper: 'Transfer Out to Trust Account',
+    sourceAccount: 'Webull Account',
+    targetAccount: 'FIDERE Trust Account',
+  },
+};
+
+const dashboardCardSx = {
+  borderRadius: 2,
+};
+
+const dashboardCardContentSx = (theme) => ({
+  p: { xs: theme.spacing(3), md: theme.spacing(3.5) },
+  '&:last-child': { pb: { xs: theme.spacing(3), md: theme.spacing(3.5) } },
+});
+
+const tableHeadCellSx = {
+  color: 'text.secondary',
+  fontWeight: 700,
+  whiteSpace: 'nowrap',
+  bgcolor: 'background.default',
+};
+
+function AccountOverviewCard({ title, description, action, children }) {
+  return (
+    <Card variant="outlined" sx={dashboardCardSx}>
+      <CardContent sx={dashboardCardContentSx}>
+        <Stack spacing={2.75}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={1.5}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                {title}
+              </Typography>
+              {description ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {description}
+                </Typography>
+              ) : null}
+            </Box>
+            {action ? <Box sx={{ flexShrink: 0 }}>{action}</Box> : null}
+          </Stack>
+          {children}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BalanceMetricCard({ item }) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={(theme) => ({
+        p: theme.spacing(2.5),
+        height: '100%',
+        minHeight: 148,
+        borderRadius: 1.5,
+        bgcolor: theme.palette.background.paper,
+      })}
+    >
+      <Stack spacing={1.25} sx={{ height: '100%' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+          {item.title}
+        </Typography>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            lineHeight: 1.25,
+            overflowWrap: 'anywhere',
+          }}
+        >
+          {item.amount}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 'auto' }}>
+          {item.helper}
+        </Typography>
+      </Stack>
+    </Paper>
+  );
+}
+
+function StatusPill({ label, color = 'success' }) {
+  return <Chip size="small" color={color} label={label} sx={{ height: 24, fontWeight: 700 }} />;
+}
+
+function EmptyTableRow({ colSpan, label }) {
+  return (
+    <TableRow>
+      <TableCell colSpan={colSpan}>
+        <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
+          {label}
+        </Typography>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function getRecordStatusChipProps(status) {
+  if (status === 'Completed') {
+    return { color: 'success', variant: 'filled' };
+  }
+  if (status === 'Rejected') {
+    return { color: 'error', variant: 'filled' };
+  }
+  return { color: 'primary', variant: 'outlined' };
+}
+
+export function BrokerAccountDashboard() {
+  const [transferDirection, setTransferDirection] = React.useState(null);
+  const account = brokerAccountDashboardData;
+
+  return (
+    <Stack spacing={{ xs: 3, md: 3.5 }}>
+      <BrokerAccountHero account={account} />
+
+      <Grid container spacing={{ xs: 3, md: 3.5 }} alignItems="flex-start">
+        <Grid size={{ xs: 12, md: 8.4 }}>
+          <Stack spacing={{ xs: 3, md: 3.5 }}>
+            <BalanceOverview balances={account.balances} />
+            <InternalTransferCard onRequestTransfer={setTransferDirection} />
+            <HoldingsOverviewTable holdings={account.holdings} />
+            <RecentTransferTable records={account.transferRecords} />
+          </Stack>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 3.6 }}>
+          <BrokerAccountSidebar account={account} />
+        </Grid>
+      </Grid>
+
+      <TransferRequestDialog
+        direction={transferDirection ? transferDirections[transferDirection] : null}
+        open={Boolean(transferDirection)}
+        onClose={() => setTransferDirection(null)}
+      />
+    </Stack>
+  );
+}
+
+export function BrokerAccountOverviewPage() {
+  return <BrokerAccountDashboard />;
+}
+
+export function BrokerAccountHero({ account }) {
+  return (
+    <Card variant="outlined" sx={dashboardCardSx}>
+      <CardContent
+        sx={(theme) => ({
+          p: { xs: theme.spacing(3), md: theme.spacing(4.5) },
+          '&:last-child': { pb: { xs: theme.spacing(3), md: theme.spacing(4.5) } },
+        })}
+      >
+        <Grid container spacing={{ xs: 3, md: 4 }} alignItems="center">
+          <Grid size={{ xs: 12, md: 7.6 }}>
+            <Stack spacing={2.5}>
+              <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
+                <StatusPill label="Active / 已开通" />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  label={account.brokerName}
+                  sx={{ height: 24, fontWeight: 600 }}
+                />
+              </Stack>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                  券商账户已开通
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 720 }}>
+                  您已成功开通 Webull 微牛证券账户，可在此查看账户信息、资金余额、持仓及信托内资金划转记录。
+                </Typography>
+              </Box>
+              <Paper
+                variant="outlined"
+                sx={(theme) => ({
+                  p: theme.spacing(2),
+                  borderRadius: 1.5,
+                  bgcolor: alpha(theme.palette.info.main, 0.045),
+                  borderColor: alpha(theme.palette.info.main, 0.18),
+                })}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  FIDERE Trust 仅提供账户查看、信托管理及内部资金划转服务，本页面不提供证券相关操作功能。
+                </Typography>
+              </Paper>
+            </Stack>
+          </Grid>
+          <Grid size={{ xs: 12, md: 4.4 }}>
+            <Paper
+              variant="outlined"
+              sx={(theme) => ({
+                p: theme.spacing(2.5),
+                borderRadius: 1.5,
+                bgcolor: theme.palette.background.paper,
+              })}
+            >
+              <Stack spacing={1.75}>
+                <SummaryRow label="券商名称" value={account.brokerName} />
+                <SummaryRow label="账户类型" value={account.accountType} />
+                <SummaryRow label="开户日期" value={account.openedAt} />
+                <SummaryRow label="状态" value={account.accountStatus} strong />
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function BalanceOverview({ balances }) {
+  return (
+    <AccountOverviewCard title="资金余额" description="以下金额仅用于账户查看与信托管理。">
+      <Box
+        sx={(theme) => ({
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: theme.spacing(2.25),
+        })}
+      >
+        {balances.map((item) => (
+          <Box key={item.title}>
+            <BalanceMetricCard item={item} />
+          </Box>
+        ))}
+      </Box>
+    </AccountOverviewCard>
+  );
+}
+
+export function InternalTransferCard({ onRequestTransfer }) {
+  return (
+    <AccountOverviewCard
+      title="资金划转"
+      description="您可以在 FIDERE Trust 信托账户与券商账户之间提交内部资金划转申请，申请将由 FIDERE Trust 审核及处理。"
+    >
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+        <Stack spacing={0.75} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          <Button
+            variant="contained"
+            onClick={() => onRequestTransfer('trustToBroker')}
+            sx={{ ...buttonSx, minWidth: { sm: 220 }, width: { xs: '100%', sm: 'auto' } }}
+          >
+            从信托账户转入券商账户
+          </Button>
+          <Typography variant="caption" color="text.secondary">
+            Transfer In from Trust Account
+          </Typography>
+        </Stack>
+        <Stack spacing={0.75} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          <Button
+            variant="outlined"
+            onClick={() => onRequestTransfer('brokerToTrust')}
+            sx={{ ...buttonSx, minWidth: { sm: 220 }, width: { xs: '100%', sm: 'auto' } }}
+          >
+            从券商账户转出至信托账户
+          </Button>
+          <Typography variant="caption" color="text.secondary">
+            Transfer Out to Trust Account
+          </Typography>
+        </Stack>
+      </Stack>
+    </AccountOverviewCard>
+  );
+}
+
+export function HoldingsOverviewTable({ holdings }) {
+  return (
+    <AccountOverviewCard
+      title="持仓概览"
+      description="当前券商账户持仓数据为只读展示，不支持线上证券操作。"
+      action={
+        <Button variant="outlined" size="small" sx={{ height: 32, minWidth: 96, whiteSpace: 'nowrap' }}>
+          View Details
+        </Button>
+      }
+    >
+      <Box sx={{ overflowX: 'auto', borderRadius: 1.5, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+        <Table sx={{ minWidth: 920 }}>
+          <TableHead>
+            <TableRow>
+              {['Security Name', 'Ticker', 'Market', 'Quantity', 'Market Value', 'Cost', 'Unrealized P/L', 'Allocation'].map(
+                (header) => (
+                  <TableCell key={header} sx={tableHeadCellSx}>
+                    {header}
+                  </TableCell>
+                ),
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {holdings.length === 0 ? (
+              <EmptyTableRow colSpan={8} label="暂无持仓记录" />
+            ) : (
+              holdings.map((holding) => {
+                const isGain = holding.unrealizedPl.startsWith('+');
+                return (
+                  <TableRow key={holding.ticker} hover sx={{ '& .MuiTableCell-root': { py: 1.5 } }}>
+                    <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{holding.securityName}</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>{holding.ticker}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{holding.market}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{holding.quantity}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{holding.marketValue}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{holding.cost}</TableCell>
+                    <TableCell
+                      sx={{
+                        color: isGain ? 'success.main' : 'error.main',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {holding.unrealizedPl}
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{holding.allocation}</TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </Box>
+    </AccountOverviewCard>
+  );
+}
+
+export function RecentTransferTable({ records }) {
+  return (
+    <AccountOverviewCard title="最近资金划转记录" description="展示信托账户与券商账户之间的内部资金划转记录。">
+      <Box sx={{ overflowX: 'auto', borderRadius: 1.5, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+        <Table sx={{ minWidth: 940 }}>
+          <TableHead>
+            <TableRow>
+              {['日期', '类型', '来源账户', '目标账户', '币种', '金额', '状态', '参考编号'].map((header) => (
+                <TableCell key={header} sx={tableHeadCellSx}>
+                  {header}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {records.length === 0 ? (
+              <EmptyTableRow colSpan={8} label="暂无资金划转记录" />
+            ) : (
+              records.map((record) => {
+                const chipProps = getRecordStatusChipProps(record.status);
+                return (
+                  <TableRow key={record.reference} hover sx={{ '& .MuiTableCell-root': { py: 1.5 } }}>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{record.date}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{record.type}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{record.sourceAccount}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{record.targetAccount}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{record.currency}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{record.amount}</TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        color={chipProps.color}
+                        variant={chipProps.variant}
+                        label={record.status}
+                        sx={{ height: 22, fontWeight: 600 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{record.reference}</TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </Box>
+    </AccountOverviewCard>
+  );
+}
+
+export function BrokerAccountSidebar({ account }) {
+  return (
+    <Stack spacing={{ xs: 3, md: 3.5 }} sx={{ position: { md: 'sticky' }, top: { md: 24 } }}>
+      <AccountOverviewCard title="券商账户信息">
+        <Stack spacing={1.5}>
+          <SummaryRow label="账户名称" value={account.accountName} strong />
+          <SummaryRow label="账户号码" value={account.accountNumber} />
+          <SummaryRow label="账户状态" value={account.accountStatus} />
+          <SummaryRow label="账户类型" value={account.accountType} />
+          <SummaryRow label="结算货币" value={account.currencies} />
+          <SummaryRow label="更新时间" value={account.updatedAt} />
+        </Stack>
+      </AccountOverviewCard>
+
+      <AccountOverviewCard title="信托账户关联信息">
+        <Stack spacing={1.5}>
+          <SummaryRow label="关联账户" value={account.trustAccount} strong />
+          <Typography variant="body2" color="text.secondary">
+            {account.trustRelation}
+          </Typography>
+        </Stack>
+      </AccountOverviewCard>
+
+      <Alert
+        severity="info"
+        sx={(theme) => ({
+          border: `1px solid ${alpha(theme.palette.info.main, 0.22)}`,
+          bgcolor: alpha(theme.palette.info.main, 0.06),
+          borderRadius: 2,
+        })}
+      >
+        <Stack spacing={0.5}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            风险与说明提示
+          </Typography>
+          <Typography variant="body2">
+            FIDERE Trust 仅提供账户查看、资金划转及信托管理服务。本页面为只读信息页，不提供证券相关操作功能。
+          </Typography>
+        </Stack>
+      </Alert>
+    </Stack>
+  );
+}
+
+export function TransferRequestDialog({ direction, open, onClose }) {
+  const [currency, setCurrency] = React.useState('USD');
+
+  React.useEffect(() => {
+    if (open) setCurrency('USD');
+  }, [open]);
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle sx={{ pb: 1 }}>资金划转申请</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2.25} sx={{ pt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            {direction?.title ?? '内部资金划转'} · {direction?.helper ?? ''}
+          </Typography>
+          <TextField label="来源账户" value={direction?.sourceAccount ?? ''} fullWidth InputProps={{ readOnly: true }} />
+          <TextField label="目标账户" value={direction?.targetAccount ?? ''} fullWidth InputProps={{ readOnly: true }} />
+          <FormControl fullWidth>
+            <InputLabel id="transfer-currency-label">币种</InputLabel>
+            <Select
+              labelId="transfer-currency-label"
+              value={currency}
+              label="币种"
+              onChange={(event) => setCurrency(event.target.value)}
+            >
+              <MenuItem value="USD">USD</MenuItem>
+              <MenuItem value="HKD">HKD</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField label="金额" fullWidth placeholder="0.00" inputMode="decimal" />
+          <TextField label="用途说明" fullWidth multiline minRows={3} placeholder="请填写本次内部资金划转用途" />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={(theme) => ({ px: theme.spacing(3), pb: theme.spacing(3), gap: 1.5 })}>
+        <Button variant="outlined" onClick={onClose} sx={buttonSx}>
+          取消
+        </Button>
+        <Button variant="contained" onClick={onClose} sx={{ ...buttonSx, minWidth: 132 }}>
+          提交划转申请
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -409,7 +986,7 @@ export function FeeConfirmationStep({ selectedBroker, feeConfirmed, onFeeConfirm
             我已阅读并确认开户费用及相关说明。
           </Typography>
         }
-        sx={{ alignItems: 'flex-start', m: 0 }}
+        sx={confirmationControlSx}
       />
 
       <Divider />
@@ -1003,7 +1580,7 @@ export function ReviewSubmitStep({
             我确认以上资料真实、完整，并授权 FIDERE Trust 协助提交券商开户申请。
           </Typography>
         }
-        sx={{ alignItems: 'flex-start', m: 0 }}
+        sx={confirmationControlSx}
       />
 
       <Divider />

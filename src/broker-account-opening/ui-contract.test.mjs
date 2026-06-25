@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 const brokersSource = readFileSync(new URL('./brokers.js', import.meta.url), 'utf8');
 const componentsSource = readFileSync(new URL('./components.jsx', import.meta.url), 'utf8');
 const themeSource = readFileSync(new URL('../main.jsx', import.meta.url), 'utf8');
+const appSource = readFileSync(new URL('../App.jsx', import.meta.url), 'utf8');
+const pageSource = readFileSync(new URL('./BrokerAccountOpeningPage.jsx', import.meta.url), 'utf8');
 
 function extractFunction(source, name) {
   const start = source.indexOf(`export function ${name}`);
@@ -44,7 +46,6 @@ test('application summary is informational and does not render a next button', (
 });
 
 test('submitted applications can move from success to a progress tracking page', () => {
-  const pageSource = readFileSync(new URL('./BrokerAccountOpeningPage.jsx', import.meta.url), 'utf8');
   const progressSource = extractFunction(componentsSource, 'ApplicationProgressPage');
 
   assert.match(pageSource, /const \[submittedView,\s*setSubmittedView\]\s*=\s*useState\('success'\)/);
@@ -55,6 +56,35 @@ test('submitted applications can move from success to a progress tracking page',
   assert.match(progressSource, /初步审核/);
   assert.match(progressSource, /预计 3–7 个工作日/);
   assert.match(progressSource, /返回提交结果/);
+});
+
+test('header exposes all broker account status preview states', () => {
+  assert.match(appSource, /const \[accountStatus,\s*setAccountStatus\]\s*=\s*useState\('opening'\)/);
+  assert.match(appSource, /value:\s*'opening'/);
+  assert.match(appSource, /value:\s*'under_review'/);
+  assert.match(appSource, /value:\s*'opened'/);
+  assert.match(appSource, /value:\s*'action_required'/);
+  assert.match(appSource, /账户状态：\{selectedStatus\.label\}/);
+});
+
+test('opened account status renders an account overview page', () => {
+  const overviewSource = extractFunction(componentsSource, 'BrokerAccountOverviewPage');
+
+  assert.match(pageSource, /accountStatus === 'opened'/);
+  assert.match(pageSource, /<BrokerAccountOverviewPage/);
+  assert.match(componentsSource, /券商账户已开通/);
+  assert.match(componentsSource, /Net Asset Value/);
+  assert.match(componentsSource, /资金划转/);
+  assert.match(componentsSource, /FIDERE Trust 仅提供账户查看/);
+  assert.doesNotMatch(overviewSource, /Buy|Sell|Trade|Order|买入|卖出|下单|交易|充值|提现/);
+});
+
+test('confirmation checkbox controls align with their labels', () => {
+  assert.match(componentsSource, /const confirmationControlSx = \{/);
+  assert.match(componentsSource, /alignItems:\s*'center'/);
+  assert.match(componentsSource, /'& \.MuiCheckbox-root':\s*\{\s*p:\s*0/);
+  assert.equal((componentsSource.match(/sx=\{confirmationControlSx\}/g) ?? []).length, 2);
+  assert.doesNotMatch(componentsSource, /FormControlLabel[\s\S]{0,400}alignItems:\s*'flex-start'/);
 });
 
 test('site icon scale is compact', () => {

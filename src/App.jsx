@@ -1,21 +1,95 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
+import Fade from '@mui/material/Fade';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import HelpOutline from '@mui/icons-material/HelpOutline';
 import Language from '@mui/icons-material/Language';
 import NotificationsNone from '@mui/icons-material/NotificationsNone';
 import BrokerAccountOpeningPage from './broker-account-opening/BrokerAccountOpeningPage';
 
-function Header() {
+const accountStatusOptions = [
+  { value: 'opening', label: '开户中', description: 'Opening in Progress' },
+  { value: 'under_review', label: '审核中', description: 'Under Review' },
+  { value: 'action_required', label: '需补充资料', description: 'Action Required' },
+  { value: 'opened', label: '开户成功', description: 'Account Opened' },
+];
+
+function AccountStatusSwitcher({ accountStatus, onAccountStatusChange }) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  const selectedStatus = accountStatusOptions.find((option) => option.value === accountStatus) ?? accountStatusOptions[0];
+
+  return (
+    <>
+      <Button
+        color="inherit"
+        variant="outlined"
+        endIcon={<KeyboardArrowDown />}
+        onClick={(event) => setAnchorEl(event.currentTarget)}
+        sx={(theme) => ({
+          height: 34,
+          minWidth: { xs: 0, md: 148 },
+          px: { xs: 1, md: 1.5 },
+          borderColor: 'rgba(255,255,255,0.36)',
+          color: 'common.white',
+          bgcolor: 'rgba(255,255,255,0.1)',
+          whiteSpace: 'nowrap',
+          boxShadow: 'none',
+          '&:hover': {
+            borderColor: 'rgba(255,255,255,0.58)',
+            bgcolor: 'rgba(255,255,255,0.14)',
+          },
+          [theme.breakpoints.down('sm')]: {
+            fontSize: 12,
+          },
+        })}
+      >
+        账户状态：{selectedStatus.label}
+      </Button>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        {accountStatusOptions.map((option) => (
+          <MenuItem
+            key={option.value}
+            selected={option.value === accountStatus}
+            onClick={() => {
+              onAccountStatusChange(option.value);
+              setAnchorEl(null);
+            }}
+          >
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {option.label}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {option.description}
+              </Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  );
+}
+
+function Header({ accountStatus, onAccountStatusChange }) {
   const navItems = ['Dashboard', 'Accounts', 'Investment', 'Transactions', 'Trust Services'];
 
   return (
@@ -76,6 +150,9 @@ function Header() {
         </Stack>
 
         <Stack direction="row" alignItems="center" spacing={1} sx={{ ml: 'auto' }}>
+          <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+            <AccountStatusSwitcher accountStatus={accountStatus} onAccountStatusChange={onAccountStatusChange} />
+          </Box>
           <IconButton color="inherit" aria-label="notifications" sx={{ color: 'common.white' }}>
             <NotificationsNone fontSize="small" />
           </IconButton>
@@ -99,6 +176,9 @@ function Header() {
             <Typography sx={{ color: 'rgba(255,255,255,0.68)', fontSize: 11, fontWeight: 500, letterSpacing: 0.8 }}>
               INDIVIDUAL ACCOUNT
             </Typography>
+          </Box>
+          <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+            <AccountStatusSwitcher accountStatus={accountStatus} onAccountStatusChange={onAccountStatusChange} />
           </Box>
         </Stack>
       </Toolbar>
@@ -145,10 +225,16 @@ function Footer() {
 }
 
 export default function App() {
+  const [accountStatus, setAccountStatus] = useState('opening');
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      <Header />
-      <BrokerAccountOpeningPage />
+      <Header accountStatus={accountStatus} onAccountStatusChange={setAccountStatus} />
+      <Fade in timeout={220} key={accountStatus}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <BrokerAccountOpeningPage accountStatus={accountStatus} />
+        </Box>
+      </Fade>
       <Footer />
     </Box>
   );
