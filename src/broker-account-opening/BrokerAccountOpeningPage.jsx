@@ -7,6 +7,7 @@ import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import {
+  ActionRequiredPage,
   ApplicationSummary,
   ApplicationProgressPage,
   BrokerAccountOverviewPage,
@@ -15,9 +16,52 @@ import {
   DocumentUploadStep,
   FeeConfirmationStep,
   ReviewSubmitStep,
-  SuccessState,
 } from './components';
 import { brokerDocumentRequirements, brokerSteps, brokers } from './brokers';
+
+const readOnlyProgressStatuses = new Set(['under_review', 'opening']);
+
+const statusProgressApplications = {
+  action_required: {
+    applicationId: 'BRK-2026-0001',
+    submittedAt: '2026-06-24 09:30',
+    progressStatus: 'action_required',
+    statusLabel: 'Action Required / 需补充资料',
+  },
+  under_review: {
+    applicationId: 'BRK-2026-0001',
+    submittedAt: '2026-06-24 09:30',
+    progressStatus: 'under_review',
+    statusLabel: 'Pending Review / 审核中',
+  },
+  opening: {
+    applicationId: 'BRK-2026-0001',
+    submittedAt: '2026-06-24 09:30',
+    progressStatus: 'opening',
+    statusLabel: 'Opening in Progress / 开户中',
+  },
+};
+
+const supplementalDocumentRequirements = [
+  {
+    id: 'addressProofSupplement',
+    name: '地址证明补充文件',
+    description: '请上传近 3 个月内显示申请人姓名、完整居住地址和签发日期的地址证明。',
+    reason: '原地址证明未显示完整居住地址，券商无法完成地址核验。',
+    required: true,
+    acceptedFormats: 'PDF / JPG / PNG',
+    maxSizeLabel: '单个文件不超过 10MB',
+  },
+  {
+    id: 'authorizationLetterSupplement',
+    name: '授权书签署页',
+    description: '请重新上传已签署并填写日期的授权书签署页。',
+    reason: '授权书签署页缺少签署日期，需要补充完整后重新提交。',
+    required: true,
+    acceptedFormats: 'PDF / JPG / PNG',
+    maxSizeLabel: '单个文件不超过 10MB',
+  },
+];
 
 const statusAlerts = {
   under_review: {
@@ -46,19 +90,27 @@ function createApplicationId(date) {
   return `BRK-${date.getFullYear()}-0001`;
 }
 
-export default function BrokerAccountOpeningPage({ accountStatus = 'opening' }) {
-  const [activeStep, setActiveStep] = useState(1);
+export default function BrokerAccountOpeningPage({ accountStatus = 'not_opened' }) {
+  const [activeStep, setActiveStep] = useState(0);
   const [selectedBrokerId, setSelectedBrokerId] = useState('webull');
   const [feeConfirmed, setFeeConfirmed] = useState(false);
   const [uploadedDocuments, setUploadedDocuments] = useState({});
   const [submitConfirmed, setSubmitConfirmed] = useState(false);
   const [submittedApplication, setSubmittedApplication] = useState(null);
-  const [submittedView, setSubmittedView] = useState('success');
 
   const selectedBroker = useMemo(
     () => brokers.find((broker) => broker.id === selectedBrokerId) ?? null,
     [selectedBrokerId],
   );
+
+  const statusApplication = useMemo(() => {
+    const application = statusProgressApplications[accountStatus];
+    if (!application) return null;
+    return {
+      ...application,
+      brokerName: selectedBroker?.name ?? brokers[0].name,
+    };
+  }, [accountStatus, selectedBroker]);
 
   const allDocumentsUploaded = useMemo(() => {
     if (!selectedBroker) return false;
@@ -66,6 +118,10 @@ export default function BrokerAccountOpeningPage({ accountStatus = 'opening' }) 
     if (requiredDocuments.length === 0) return false;
     return requiredDocuments.every((documentItem) => uploadedDocuments[documentItem.id]?.status === 'uploaded');
   }, [selectedBroker, uploadedDocuments]);
+
+  const allSupplementalDocumentsUploaded = useMemo(() => {
+    return supplementalDocumentRequirements.every((documentItem) => uploadedDocuments[documentItem.id]?.status === 'uploaded');
+  }, [uploadedDocuments]);
 
   const canProceed = useMemo(() => {
     if (submittedApplication) return false;
@@ -120,26 +176,21 @@ export default function BrokerAccountOpeningPage({ accountStatus = 'opening' }) 
       applicationId: createApplicationId(now),
       brokerName: selectedBroker.name,
       submittedAt: formatSubmitTime(now),
+      progressStatus: 'under_review',
+      statusLabel: 'Pending Review / 审核中',
     });
-    setSubmittedView('success');
   };
 
-  const handleReset = () => {
-    setActiveStep(0);
-    setSelectedBrokerId('');
-    setFeeConfirmed(false);
-    setUploadedDocuments({});
-    setSubmitConfirmed(false);
-    setSubmittedApplication(null);
-    setSubmittedView('success');
-  };
-
-  const handleViewProgress = () => {
-    setSubmittedView('progress');
-  };
-
-  const handleBackToSubmittedResult = () => {
-    setSubmittedView('success');
+  const handleResubmitSupplementalDocuments = () => {
+    if (!selectedBroker || !allSupplementalDocumentsUploaded) return;
+    const now = new Date();
+    setSubmittedApplication({
+      applicationId: statusApplication?.applicationId ?? createApplicationId(now),
+      brokerName: selectedBroker.name,
+      submittedAt: formatSubmitTime(now),
+      progressStatus: 'under_review',
+      statusLabel: 'Pending Review / 审核中',
+    });
   };
 
   if (accountStatus === 'opened') {
@@ -160,25 +211,111 @@ export default function BrokerAccountOpeningPage({ accountStatus = 'opening' }) 
     );
   }
 
+  if (accountStatus === 'action_required' && statusApplication) {
+    const statusAlert = statusAlerts[accountStatus];
+
+    return (
+      <Container
+        component="main"
+        maxWidth={false}
+        sx={(theme) => ({
+          flex: 1,
+          width: '100%',
+          maxWidth: 1200,
+          pt: { xs: theme.spacing(2.5), md: theme.spacing(4.5) },
+          pb: { xs: theme.spacing(8), md: theme.spacing(7) },
+        })}
+      >
+        <Stack spacing={3}>
+          {statusAlert ? (
+            <Alert severity={statusAlert.severity}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {statusAlert.title}
+              </Typography>
+              <Typography variant="body2">{statusAlert.message}</Typography>
+            </Alert>
+          ) : null}
+
+          <Grid container spacing={3} alignItems="flex-start">
+            <Grid size={{ xs: 12, md: 7.5, lg: 8 }}>
+              {submittedApplication ? (
+                <ApplicationProgressPage application={submittedApplication} status={submittedApplication.progressStatus} />
+              ) : (
+                <ActionRequiredPage
+                  application={statusApplication}
+                  selectedBroker={selectedBroker}
+                  documents={supplementalDocumentRequirements}
+                  uploadedDocuments={uploadedDocuments}
+                  onUpload={handleUpload}
+                  onDelete={handleDeleteUpload}
+                  onSubmit={handleResubmitSupplementalDocuments}
+                />
+              )}
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4.5, lg: 4 }}>
+              <Stack spacing={3} sx={{ position: { md: 'sticky' }, top: { md: 24 } }}>
+                <ApplicationSummary
+                  selectedBroker={selectedBroker}
+                  activeStep={activeStep}
+                  submittedApplication={submittedApplication ?? statusApplication}
+                />
+              </Stack>
+            </Grid>
+          </Grid>
+        </Stack>
+      </Container>
+    );
+  }
+
+  if (readOnlyProgressStatuses.has(accountStatus) && statusApplication) {
+    const statusAlert = statusAlerts[accountStatus];
+
+    return (
+      <Container
+        component="main"
+        maxWidth={false}
+        sx={(theme) => ({
+          flex: 1,
+          width: '100%',
+          maxWidth: 1200,
+          pt: { xs: theme.spacing(2.5), md: theme.spacing(4.5) },
+          pb: { xs: theme.spacing(8), md: theme.spacing(7) },
+        })}
+      >
+        <Stack spacing={3}>
+          {statusAlert ? (
+            <Alert severity={statusAlert.severity}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {statusAlert.title}
+              </Typography>
+              <Typography variant="body2">{statusAlert.message}</Typography>
+            </Alert>
+          ) : null}
+
+          <Grid container spacing={3} alignItems="flex-start">
+            <Grid size={{ xs: 12, md: 7.5, lg: 8 }}>
+              <ApplicationProgressPage application={statusApplication} status={statusApplication.progressStatus} />
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4.5, lg: 4 }}>
+              <Stack spacing={3} sx={{ position: { md: 'sticky' }, top: { md: 24 } }}>
+                <ApplicationSummary
+                  selectedBroker={selectedBroker}
+                  activeStep={activeStep}
+                  submittedApplication={statusApplication}
+                />
+              </Stack>
+            </Grid>
+          </Grid>
+        </Stack>
+      </Container>
+    );
+  }
+
   const renderStepContent = () => {
     if (submittedApplication) {
-      if (submittedView === 'progress') {
-        return (
-          <ApplicationProgressPage
-            application={submittedApplication}
-            onBackToResult={handleBackToSubmittedResult}
-            onBackToAccounts={handleReset}
-          />
-        );
-      }
-
-      return (
-        <SuccessState
-          application={submittedApplication}
-          onBackToAccounts={handleReset}
-          onViewProgress={handleViewProgress}
-        />
-      );
+      return <ApplicationProgressPage application={submittedApplication} status={submittedApplication.progressStatus} />;
     }
 
     if (activeStep === 0) {

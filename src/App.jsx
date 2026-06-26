@@ -20,6 +20,7 @@ import NotificationsNone from '@mui/icons-material/NotificationsNone';
 import BrokerAccountOpeningPage from './broker-account-opening/BrokerAccountOpeningPage';
 
 const accountStatusOptions = [
+  { value: 'not_opened', label: '未开通', description: 'Not Opened' },
   { value: 'opening', label: '开户中', description: 'Opening in Progress' },
   { value: 'under_review', label: '审核中', description: 'Under Review' },
   { value: 'action_required', label: '需补充资料', description: 'Action Required' },
@@ -225,7 +226,7 @@ function Footer() {
 }
 
 export default function App() {
-  const [accountStatus, setAccountStatus] = useState('opening');
+  const [accountStatus, setAccountStatus] = useState('not_opened');
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>

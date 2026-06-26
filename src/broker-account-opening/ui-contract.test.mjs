@@ -45,21 +45,47 @@ test('application summary is informational and does not render a next button', (
   assert.doesNotMatch(summarySource, /<Button/);
 });
 
-test('submitted applications can move from success to a progress tracking page', () => {
+test('submitted applications render a read-only progress tracking page', () => {
   const progressSource = extractFunction(componentsSource, 'ApplicationProgressPage');
 
-  assert.match(pageSource, /const \[submittedView,\s*setSubmittedView\]\s*=\s*useState\('success'\)/);
-  assert.match(pageSource, /setSubmittedView\('progress'\)/);
+  assert.match(pageSource, /readOnlyProgressStatuses\s*=\s*new Set\(\['under_review', 'opening'\]\)/);
   assert.match(pageSource, /<ApplicationProgressPage/);
+  assert.doesNotMatch(pageSource, /<SuccessState/);
+  assert.doesNotMatch(pageSource, /setSubmittedView/);
   assert.match(progressSource, /申请进度/);
-  assert.match(progressSource, /Pending Review/);
-  assert.match(progressSource, /初步审核/);
-  assert.match(progressSource, /预计 3–7 个工作日/);
-  assert.match(progressSource, /返回提交结果/);
+  assert.match(componentsSource, /Pending Review \/ 审核中/);
+  assert.match(componentsSource, /Opening in Progress \/ 开户中/);
+  assert.match(componentsSource, /初步审核/);
+  assert.match(componentsSource, /预计 3–7 个工作日/);
+  assert.match(progressSource, /showActions/);
+});
+
+test('not opened account status owns the broker opening flow entry', () => {
+  assert.match(appSource, /value:\s*'not_opened'/);
+  assert.match(appSource, /label:\s*'未开通'/);
+  assert.match(appSource, /const \[accountStatus,\s*setAccountStatus\]\s*=\s*useState\('not_opened'\)/);
+  assert.match(pageSource, /BrokerAccountOpeningPage\(\{ accountStatus = 'not_opened' \}\)/);
+  assert.match(pageSource, /const \[activeStep,\s*setActiveStep\]\s*=\s*useState\(0\)/);
+  assert.doesNotMatch(pageSource, /readOnlyProgressStatuses\s*=\s*new Set\(\['under_review', 'opening', 'not_opened'\]\)/);
+});
+
+test('action required status shows return reasons and supplemental resubmission', () => {
+  const actionRequiredSource = extractFunction(componentsSource, 'ActionRequiredPage');
+
+  assert.match(pageSource, /accountStatus === 'action_required'/);
+  assert.match(pageSource, /supplementalDocumentRequirements/);
+  assert.match(pageSource, /<ActionRequiredPage/);
+  assert.match(actionRequiredSource, /退回原因/);
+  assert.match(actionRequiredSource, /补充资料/);
+  assert.match(actionRequiredSource, /重新提交补充资料/);
+  assert.match(actionRequiredSource, /disabled=\{!allUploaded\}/);
+  assert.match(componentsSource, /title:\s*'需补充资料'/);
+  assert.match(componentsSource, /title:\s*'重新审核'/);
 });
 
 test('header exposes all broker account status preview states', () => {
-  assert.match(appSource, /const \[accountStatus,\s*setAccountStatus\]\s*=\s*useState\('opening'\)/);
+  assert.match(appSource, /const \[accountStatus,\s*setAccountStatus\]\s*=\s*useState\('not_opened'\)/);
+  assert.match(appSource, /value:\s*'not_opened'/);
   assert.match(appSource, /value:\s*'opening'/);
   assert.match(appSource, /value:\s*'under_review'/);
   assert.match(appSource, /value:\s*'opened'/);

@@ -898,7 +898,7 @@ export function ApplicationSummary({ selectedBroker, activeStep, submittedApplic
             <Divider />
             <SummaryRow label="申请编号" value={submittedApplication.applicationId} />
             <SummaryRow label="券商名称" value={submittedApplication.brokerName} />
-            <SummaryRow label="当前状态" value="Pending Review" />
+            <SummaryRow label="当前状态" value={submittedApplication.statusLabel ?? 'Pending Review / 审核中'} />
           </Stack>
         </CardContent>
       </Card>
@@ -1597,28 +1597,98 @@ export function ReviewSubmitStep({
   );
 }
 
-const progressSteps = [
-  {
-    title: '申请已提交',
-    status: 'completed',
-    description: 'FIDERE Trust 已收到开户申请与基础资料。',
+const progressSteps = {
+  under_review: [
+    {
+      title: '申请已提交',
+      status: 'completed',
+      description: 'FIDERE Trust 已收到开户申请与基础资料。',
+    },
+    {
+      title: '初步审核',
+      status: 'active',
+      description: '团队正在核对资料完整性，并确认券商开户要求。',
+    },
+    {
+      title: '券商审核',
+      status: 'pending',
+      description: '资料通过预审后，将提交至券商进行账户开立审核。',
+    },
+    {
+      title: '开户完成',
+      status: 'pending',
+      description: '审核完成后，我们会更新账户开通结果与后续指引。',
+    },
+  ],
+  opening: [
+    {
+      title: '申请已提交',
+      status: 'completed',
+      description: 'FIDERE Trust 已收到开户申请与基础资料。',
+    },
+    {
+      title: '初步审核',
+      status: 'completed',
+      description: '基础资料已完成预审，并已进入券商处理环节。',
+    },
+    {
+      title: '券商开户中',
+      status: 'active',
+      description: '券商正在进行账户开立处理。期间无需重复提交开户资料。',
+    },
+    {
+      title: '开户完成',
+      status: 'pending',
+      description: '开户完成后，我们会更新账户开通结果与后续指引。',
+    },
+  ],
+  action_required: [
+    {
+      title: '申请已提交',
+      status: 'completed',
+      description: 'FIDERE Trust 已收到开户申请与基础资料。',
+    },
+    {
+      title: '初步审核',
+      status: 'completed',
+      description: '团队已完成资料初审，并确认有部分资料需要补充。',
+    },
+    {
+      title: '需补充资料',
+      status: 'active',
+      description: '请根据退回原因上传补充文件，提交后我们会重新审核。',
+    },
+    {
+      title: '重新审核',
+      status: 'pending',
+      description: '补充资料提交后，FIDERE Trust 会重新核对并同步至券商。',
+    },
+    {
+      title: '开户完成',
+      status: 'pending',
+      description: '审核与券商开户完成后，我们会更新账户开通结果。',
+    },
+  ],
+};
+
+const progressStatusContent = {
+  under_review: {
+    chipLabel: 'Pending Review / 审核中',
+    currentStage: '初步审核',
+    description: '当前状态为 Pending Review。我们会在预计 3–7 个工作日内完成初步审核，并通过 FIDERE Trust 更新处理结果。',
+    nextStep: '暂时无需补充资料。如初步审核发现资料需要更新，我们会联系您确认并重新上传。',
+    updateTime: '预计 3–7 个工作日内更新。审核完成后，页面状态将同步为券商审核或开户完成。',
   },
-  {
-    title: '初步审核',
-    status: 'active',
-    description: '团队正在核对资料完整性，并确认券商开户要求。',
+  opening: {
+    chipLabel: 'Opening in Progress / 开户中',
+    currentStage: '券商开户中',
+    description: '当前状态为 Opening in Progress。开户申请已进入券商处理环节，请等待账户开立结果更新。',
+    nextStep: '暂时无需继续操作开户流程。若券商需要补充信息，我们会通过 FIDERE Trust 通知您。',
+    updateTime: '券商处理完成后，页面状态将同步为开户完成，并展示已开通账户信息。',
   },
-  {
-    title: '券商审核',
-    status: 'pending',
-    description: '资料通过预审后，将提交至券商进行账户开立审核。',
-  },
-  {
-    title: '开户完成',
-    status: 'pending',
-    description: '审核完成后，我们会更新账户开通结果与后续指引。',
-  },
-];
+};
+
+const fallbackProgressStatus = 'under_review';
 
 function ProgressStepItem({ step, index }) {
   const isCompleted = step.status === 'completed';
@@ -1660,7 +1730,156 @@ function ProgressStepItem({ step, index }) {
   );
 }
 
-export function ApplicationProgressPage({ application, onBackToResult, onBackToAccounts }) {
+export function ActionRequiredPage({
+  application,
+  selectedBroker,
+  documents,
+  uploadedDocuments,
+  onUpload,
+  onDelete,
+  onSubmit,
+}) {
+  const completedCount = documents.filter((documentItem) => uploadedDocuments[documentItem.id]?.status === 'uploaded').length;
+  const allUploaded = documents.length > 0 && completedCount === documents.length;
+
+  return (
+    <Stack spacing={3}>
+      <Card variant="outlined" sx={cardSx}>
+        <CardContent
+          sx={(theme) => ({
+            p: { xs: theme.spacing(3), md: theme.spacing(4) },
+            '&:last-child': { pb: { xs: theme.spacing(3), md: theme.spacing(4) } },
+          })}
+        >
+          <Stack spacing={3}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  需补充资料
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 720 }}>
+                  当前开户申请已退回补件。请查看退回原因，上传补充资料后重新提交审核。
+                </Typography>
+              </Box>
+              <Chip
+                color="warning"
+                variant="outlined"
+                label={application.statusLabel ?? 'Action Required / 需补充资料'}
+                sx={{ alignSelf: { xs: 'flex-start', sm: 'center' }, fontWeight: 600 }}
+              />
+            </Stack>
+
+            <Paper
+              variant="outlined"
+              sx={(theme) => ({
+                p: theme.spacing(2.5),
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.warning.main, 0.04),
+                borderColor: alpha(theme.palette.warning.main, 0.24),
+              })}
+            >
+              <Stack spacing={1.5}>
+                <SummaryRow label="申请编号" value={application.applicationId} strong />
+                <SummaryRow label="券商名称" value={application.brokerName} />
+                <SummaryRow label="当前阶段" value="需补充资料" />
+                <SummaryRow label="原提交时间" value={application.submittedAt} />
+              </Stack>
+            </Paper>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Grid container spacing={3} alignItems="flex-start">
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Stack spacing={3}>
+            <Paper variant="outlined" sx={(theme) => ({ p: theme.spacing(2.5), borderRadius: 2 })}>
+              <Stack spacing={2}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  退回原因
+                </Typography>
+                <Divider />
+                {documents.map((documentItem) => (
+                  <Box key={documentItem.id}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {documentItem.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      {documentItem.reason}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Paper>
+
+            <Paper variant="outlined" sx={(theme) => ({ p: theme.spacing(2.5), borderRadius: 2 })}>
+              <Stack spacing={2.5}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  处理时间线
+                </Typography>
+                {progressSteps.action_required.map((step, index) => (
+                  <ProgressStepItem key={step.title} step={step} index={index} />
+                ))}
+              </Stack>
+            </Paper>
+          </Stack>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 7 }}>
+          <Stack spacing={2.5}>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                补充资料
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {selectedBroker.name} 当前需要补充 {documents.length} 项资料。全部上传后即可重新提交审核。
+              </Typography>
+            </Box>
+
+            <Stack spacing={2}>
+              {documents.map((documentItem) => (
+                <UploadDocumentCard
+                  key={documentItem.id}
+                  documentItem={documentItem}
+                  uploadedFile={uploadedDocuments[documentItem.id]}
+                  onUpload={onUpload}
+                  onDelete={onDelete}
+                />
+              ))}
+            </Stack>
+
+            <Paper
+              variant="outlined"
+              sx={(theme) => ({
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: { xs: 'stretch', sm: 'center' },
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 2,
+                p: theme.spacing(2),
+                borderRadius: 1,
+                bgcolor: theme.palette.background.paper,
+              })}
+            >
+              <Typography variant="body2" color="text.secondary">
+                已上传 {completedCount}/{documents.length} 项补充资料
+              </Typography>
+              <Button variant="contained" disabled={!allUploaded} onClick={onSubmit} sx={submitButtonSx}>
+                重新提交补充资料
+              </Button>
+            </Paper>
+          </Stack>
+        </Grid>
+      </Grid>
+    </Stack>
+  );
+}
+
+export function ApplicationProgressPage({ application, status = 'under_review', onBackToResult, onBackToAccounts }) {
+  const progressStatus = progressStatusContent[status] ? status : fallbackProgressStatus;
+  const content = progressStatusContent[progressStatus];
+  const steps = progressSteps[progressStatus];
+  const showActions = Boolean(onBackToAccounts || onBackToResult);
+
   return (
     <Card variant="outlined" sx={cardSx}>
       <CardContent
@@ -1676,13 +1895,13 @@ export function ApplicationProgressPage({ application, onBackToResult, onBackToA
                 申请进度
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 680 }}>
-                当前状态为 Pending Review。我们会在预计 3–7 个工作日内完成初步审核，并通过 FIDERE Trust 更新处理结果。
+                {content.description}
               </Typography>
             </Box>
             <Chip
               color="primary"
               variant="outlined"
-              label="Pending Review"
+              label={application.statusLabel ?? content.chipLabel}
               sx={{ alignSelf: { xs: 'flex-start', sm: 'center' }, fontWeight: 600 }}
             />
           </Stack>
@@ -1698,7 +1917,7 @@ export function ApplicationProgressPage({ application, onBackToResult, onBackToA
             <Stack spacing={1.5}>
               <SummaryRow label="申请编号" value={application.applicationId} strong />
               <SummaryRow label="券商名称" value={application.brokerName} />
-              <SummaryRow label="当前阶段" value="初步审核" />
+              <SummaryRow label="当前阶段" value={content.currentStage} />
               <SummaryRow label="提交时间" value={application.submittedAt} />
             </Stack>
           </Paper>
@@ -1709,7 +1928,7 @@ export function ApplicationProgressPage({ application, onBackToResult, onBackToA
             </Typography>
             <Paper variant="outlined" sx={(theme) => ({ p: theme.spacing(2.5), borderRadius: 2 })}>
               <Stack spacing={2.5}>
-                {progressSteps.map((step, index) => (
+                {steps.map((step, index) => (
                   <ProgressStepItem key={step.title} step={step} index={index} />
                 ))}
               </Stack>
@@ -1723,7 +1942,7 @@ export function ApplicationProgressPage({ application, onBackToResult, onBackToA
                   下一步
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                  暂时无需补充资料。如初步审核发现资料需要更新，我们会联系您确认并重新上传。
+                  {content.nextStep}
                 </Typography>
               </Paper>
             </Grid>
@@ -1733,22 +1952,32 @@ export function ApplicationProgressPage({ application, onBackToResult, onBackToA
                   更新时间
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                  预计 3–7 个工作日内更新。审核完成后，页面状态将同步为券商审核或开户完成。
+                  {content.updateTime}
                 </Typography>
               </Paper>
             </Grid>
           </Grid>
 
-          <Divider />
+          {showActions ? (
+            <>
+              <Divider />
 
-          <Stack direction={{ xs: 'column-reverse', sm: 'row' }} justifyContent="space-between" spacing={1.5}>
-            <Button variant="outlined" onClick={onBackToAccounts} sx={buttonSx}>
-              返回账户页
-            </Button>
-            <Button variant="contained" onClick={onBackToResult} sx={buttonSx}>
-              返回提交结果
-            </Button>
-          </Stack>
+              <Stack direction={{ xs: 'column-reverse', sm: 'row' }} justifyContent="space-between" spacing={1.5}>
+                {onBackToAccounts ? (
+                  <Button variant="outlined" onClick={onBackToAccounts} sx={buttonSx}>
+                    返回账户页
+                  </Button>
+                ) : (
+                  <Box />
+                )}
+                {onBackToResult ? (
+                  <Button variant="contained" onClick={onBackToResult} sx={buttonSx}>
+                    返回提交结果
+                  </Button>
+                ) : null}
+              </Stack>
+            </>
+          ) : null}
         </Stack>
       </CardContent>
     </Card>
