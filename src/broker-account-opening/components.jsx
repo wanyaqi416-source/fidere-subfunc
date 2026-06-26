@@ -154,19 +154,12 @@ const brokerAccountDashboardData = {
   accountName: 'Webull Securities Account',
   accountNumber: 'WB-****-2841',
   accountStatus: 'Active',
-  accountType: 'Individual Account',
-  currencies: 'USD / HKD',
+  accountType,
+  currencies: 'USD / HKD / CNY',
   openedAt: '2026-06-22',
   updatedAt: '2026-06-22 10:30',
   trustAccount: 'FIDERE Trust Account',
   trustRelation: '该券商账户已与您的 FIDERE Trust 信托账户完成关联，用于账户信息查看与内部资金划转申请。',
-  balances: [
-    { title: 'Net Asset Value', amount: 'USD 125,420.80', helper: '总资产净值' },
-    { title: 'Available Cash', amount: 'USD 25,000.00', helper: '可用现金' },
-    { title: 'Invested Amount', amount: 'USD 100,420.80', helper: '已投资金额' },
-    { title: 'Pending Settlement', amount: 'USD 0.00', helper: '待结算资金' },
-    { title: 'Trust Available Balance', amount: 'USD 80,000.00', helper: '信托账户可转入余额' },
-  ],
   holdings: [
     {
       securityName: 'Apple Inc.',
@@ -284,40 +277,6 @@ function AccountOverviewCard({ title, description, action, children }) {
   );
 }
 
-function BalanceMetricCard({ item }) {
-  return (
-    <Paper
-      variant="outlined"
-      sx={(theme) => ({
-        p: theme.spacing(2.5),
-        height: '100%',
-        minHeight: 148,
-        borderRadius: 1.5,
-        bgcolor: theme.palette.background.paper,
-      })}
-    >
-      <Stack spacing={1.25} sx={{ height: '100%' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-          {item.title}
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 700,
-            lineHeight: 1.25,
-            overflowWrap: 'anywhere',
-          }}
-        >
-          {item.amount}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 'auto' }}>
-          {item.helper}
-        </Typography>
-      </Stack>
-    </Paper>
-  );
-}
-
 function StatusPill({ label, color = 'success' }) {
   return <Chip size="small" color={color} label={label} sx={{ height: 24, fontWeight: 700 }} />;
 }
@@ -353,16 +312,12 @@ export function BrokerAccountDashboard() {
       <BrokerAccountHero account={account} />
 
       <Grid container spacing={{ xs: 3, md: 3.5 }} alignItems="flex-start">
-        <Grid size={{ xs: 12, md: 8.4 }}>
+        <Grid size={{ xs: 12 }}>
           <Stack spacing={{ xs: 3, md: 3.5 }}>
-            <BalanceOverview balances={account.balances} />
+            <BrokerAccountSidebar account={account} />
             <InternalTransferCard onRequestTransfer={setTransferDirection} />
             <RecentTransferTable records={account.transferRecords} />
           </Stack>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 3.6 }}>
-          <BrokerAccountSidebar account={account} />
         </Grid>
       </Grid>
 
@@ -406,7 +361,7 @@ export function BrokerAccountHero({ account }) {
                   券商账户已开通
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 720 }}>
-                  您已成功开通 Webull 微牛证券账户，可在此查看账户信息、资金余额及信托内资金划转记录。
+                  您已成功开通 Webull 微牛证券账户，可在此查看账户信息与信托内资金划转记录。
                 </Typography>
               </Box>
               <Paper
@@ -444,26 +399,6 @@ export function BrokerAccountHero({ account }) {
         </Grid>
       </CardContent>
     </Card>
-  );
-}
-
-export function BalanceOverview({ balances }) {
-  return (
-    <AccountOverviewCard title="资金余额" description="以下金额仅用于账户查看与信托管理。">
-      <Box
-        sx={(theme) => ({
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: theme.spacing(2.25),
-        })}
-      >
-        {balances.map((item) => (
-          <Box key={item.title}>
-            <BalanceMetricCard item={item} />
-          </Box>
-        ))}
-      </Box>
-    </AccountOverviewCard>
   );
 }
 
@@ -563,6 +498,9 @@ export function HoldingsOverviewTable({ holdings }) {
 }
 
 export function RecentTransferTable({ records }) {
+  // Product requirement: the opened-account page only previews the latest three transfer records.
+  const recentRecords = records.slice(0, 3);
+
   return (
     <AccountOverviewCard title="最近资金划转记录" description="展示信托账户与券商账户之间的内部资金划转记录。">
       <Box sx={{ overflowX: 'auto', borderRadius: 1.5, border: (theme) => `1px solid ${theme.palette.divider}` }}>
@@ -577,10 +515,10 @@ export function RecentTransferTable({ records }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {records.length === 0 ? (
+            {recentRecords.length === 0 ? (
               <EmptyTableRow colSpan={8} label="暂无资金划转记录" />
             ) : (
-              records.map((record) => {
+              recentRecords.map((record) => {
                 const chipProps = getRecordStatusChipProps(record.status);
                 return (
                   <TableRow key={record.reference} hover sx={{ '& .MuiTableCell-root': { py: 1.5 } }}>
@@ -613,8 +551,8 @@ export function RecentTransferTable({ records }) {
 
 export function BrokerAccountSidebar({ account }) {
   return (
-    <Stack spacing={{ xs: 3, md: 3.5 }} sx={{ position: { md: 'sticky' }, top: { md: 24 } }}>
-      <AccountOverviewCard title="券商账户信息">
+    <AccountOverviewCard title="券商账户信息">
+      <Stack spacing={2.5}>
         <Stack spacing={1.5}>
           <SummaryRow label="账户名称" value={account.accountName} strong />
           <SummaryRow label="账户号码" value={account.accountNumber} />
@@ -623,35 +561,20 @@ export function BrokerAccountSidebar({ account }) {
           <SummaryRow label="结算货币" value={account.currencies} />
           <SummaryRow label="更新时间" value={account.updatedAt} />
         </Stack>
-      </AccountOverviewCard>
 
-      <AccountOverviewCard title="信托账户关联信息">
+        <Divider />
+
         <Stack spacing={1.5}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            信托账户关联信息
+          </Typography>
           <SummaryRow label="关联账户" value={account.trustAccount} strong />
           <Typography variant="body2" color="text.secondary">
             {account.trustRelation}
           </Typography>
         </Stack>
-      </AccountOverviewCard>
-
-      <Alert
-        severity="info"
-        sx={(theme) => ({
-          border: `1px solid ${alpha(theme.palette.info.main, 0.22)}`,
-          bgcolor: alpha(theme.palette.info.main, 0.06),
-          borderRadius: 2,
-        })}
-      >
-        <Stack spacing={0.5}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            风险与说明提示
-          </Typography>
-          <Typography variant="body2">
-            FIDERE Trust 仅提供账户查看、资金划转及信托管理服务。本页面为只读信息页，不提供证券相关操作功能。
-          </Typography>
-        </Stack>
-      </Alert>
-    </Stack>
+      </Stack>
+    </AccountOverviewCard>
   );
 }
 
@@ -897,6 +820,7 @@ export function ApplicationSummary({ selectedBroker, activeStep, submittedApplic
             <Divider />
             <SummaryRow label="申请编号" value={submittedApplication.applicationId} />
             <SummaryRow label="券商名称" value={submittedApplication.brokerName} />
+            <SummaryRow label="账户类型" value={accountType} />
             <SummaryRow label="当前状态" value={submittedApplication.statusLabel ?? 'Pending Review / 审核中'} />
           </Stack>
         </CardContent>
@@ -1133,6 +1057,18 @@ export function UploadDocumentCard({ documentItem, uploadedFile, onUpload, onDel
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, minWidth: 0 }}>
                     {documentItem.name}
                   </Typography>
+                  {documentItem.templateUrl ? (
+                    <Button
+                      component="a"
+                      href={documentItem.templateUrl}
+                      download
+                      variant="text"
+                      size="small"
+                      sx={{ minWidth: 0, height: 24, px: 0.75, fontWeight: 600 }}
+                    >
+                      {documentItem.templateLabel ?? '模板下载'}
+                    </Button>
+                  ) : null}
                   {documentItem.required ? (
                     <Chip
                       label="必填"
@@ -1605,7 +1541,7 @@ export function ReviewSubmitStep({
   );
 }
 
-const openingProgressSteps = [
+const reviewProgressSteps = [
   {
     title: '申请已提交',
     status: 'completed',
@@ -1613,13 +1549,8 @@ const openingProgressSteps = [
   },
   {
     title: '初步审核',
-    status: 'completed',
-    description: '基础资料已完成预审，并已进入券商处理环节。',
-  },
-  {
-    title: '券商开户中',
     status: 'active',
-    description: '券商正在进行账户开立处理。期间无需重复提交开户资料。',
+    description: 'FIDERE Trust 正在进行资料预审。期间无需继续操作开户流程。',
   },
   {
     title: '开户完成',
@@ -1629,9 +1560,8 @@ const openingProgressSteps = [
 ];
 
 const progressSteps = {
-  under_review: openingProgressSteps,
-  opening: openingProgressSteps,
-  action_required: [
+  under_review: reviewProgressSteps,
+  rejected: [
     {
       title: '申请已提交',
       status: 'completed',
@@ -1643,9 +1573,9 @@ const progressSteps = {
       description: '团队已完成资料初审，并确认有部分资料需要补充。',
     },
     {
-      title: '需补充资料',
+      title: '已拒绝',
       status: 'active',
-      description: '请根据退回原因上传补充文件，提交后我们会重新审核。',
+      description: '请根据拒绝原因上传补充文件，提交后我们会重新审核。',
     },
     {
       title: '重新审核',
@@ -1667,13 +1597,6 @@ const progressStatusContent = {
     description: '当前状态为 Pending Review。我们会在预计 3–7 个工作日内完成初步审核，并通过 FIDERE Trust 更新处理结果。',
     nextStep: '暂时无需补充资料。如初步审核发现资料需要更新，我们会联系您确认并重新上传。',
     updateTime: '预计 3–7 个工作日内更新。审核完成后，页面状态将同步为券商审核或开户完成。',
-  },
-  opening: {
-    chipLabel: 'Opening in Progress / 开户中',
-    currentStage: '券商开户中',
-    description: '当前状态为 Opening in Progress。开户申请已进入券商处理环节，请等待账户开立结果更新。',
-    nextStep: '暂时无需继续操作开户流程。若券商需要补充信息，我们会通过 FIDERE Trust 通知您。',
-    updateTime: '券商处理完成后，页面状态将同步为开户完成，并展示已开通账户信息。',
   },
 };
 
@@ -1744,16 +1667,16 @@ export function ActionRequiredPage({
             <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2}>
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                  需补充资料
+                  已拒绝
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 720 }}>
-                  当前开户申请已退回补件。请查看退回原因，上传补充资料后重新提交审核。
+                  当前开户申请已被拒绝。请查看拒绝原因，上传补充资料后重新提交审核。
                 </Typography>
               </Box>
               <Chip
                 color="warning"
                 variant="outlined"
-                label={application.statusLabel ?? 'Action Required / 需补充资料'}
+                label={application.statusLabel ?? 'Rejected / 已拒绝'}
                 sx={{ alignSelf: { xs: 'flex-start', sm: 'center' }, fontWeight: 600 }}
               />
             </Stack>
@@ -1770,7 +1693,7 @@ export function ActionRequiredPage({
               <Stack spacing={1.5}>
                 <SummaryRow label="申请编号" value={application.applicationId} strong />
                 <SummaryRow label="券商名称" value={application.brokerName} />
-                <SummaryRow label="当前阶段" value="需补充资料" />
+                <SummaryRow label="当前阶段" value="已拒绝" />
                 <SummaryRow label="原提交时间" value={application.submittedAt} />
               </Stack>
             </Paper>
@@ -1831,7 +1754,7 @@ export function ActionRequiredSidebar({ documents }) {
       <Paper variant="outlined" sx={(theme) => ({ p: theme.spacing(2.5), borderRadius: 2 })}>
         <Stack spacing={2}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            退回原因
+            拒绝原因
           </Typography>
           <Divider />
           {documents.map((documentItem) => (
@@ -1852,7 +1775,7 @@ export function ActionRequiredSidebar({ documents }) {
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
             处理时间线
           </Typography>
-          {progressSteps.action_required.map((step, index) => (
+          {progressSteps.rejected.map((step, index) => (
             <ProgressStepItem key={step.title} step={step} index={index} />
           ))}
         </Stack>
@@ -1904,6 +1827,7 @@ export function ApplicationProgressPage({ application, status = 'under_review', 
             <Stack spacing={1.5}>
               <SummaryRow label="申请编号" value={application.applicationId} strong />
               <SummaryRow label="券商名称" value={application.brokerName} />
+              <SummaryRow label="账户类型" value={accountType} />
               <SummaryRow label="当前阶段" value={content.currentStage} />
               <SummaryRow label="提交时间" value={application.submittedAt} />
             </Stack>
@@ -2012,6 +1936,7 @@ export function SuccessState({ application, onBackToAccounts, onViewProgress }) 
             <Stack spacing={1.5}>
               <SummaryRow label="申请编号" value={application.applicationId} strong />
               <SummaryRow label="券商名称" value={application.brokerName} />
+              <SummaryRow label="账户类型" value={accountType} />
               <SummaryRow label="当前状态" value="Pending Review" />
               <SummaryRow label="提交时间" value={application.submittedAt} />
             </Stack>

@@ -19,6 +19,8 @@ export const brokerDocumentRequirements = {
       id: 'basicAccountInfo',
       name: '账户基础资料',
       description: '用于确认开户人身份、联系方式及账户基础信息。',
+      templateUrl: '/templates/sub-account-opening-form-trust.docx',
+      templateLabel: '模板下载',
       required: true,
       acceptedFormats: 'PDF / JPG / PNG',
       maxSizeLabel: '单个文件不超过 10MB',
@@ -77,4 +79,4 @@ export const brokers = [
   },
 ];
 
-export const accountType = 'Individual Account';
+export const accountType = '现金账户';

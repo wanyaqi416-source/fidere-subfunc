@@ -20,26 +20,20 @@ import {
 } from './components';
 import { brokerDocumentRequirements, brokerSteps, brokers } from './brokers';
 
-const readOnlyProgressStatuses = new Set(['under_review', 'opening']);
+const readOnlyProgressStatuses = new Set(['under_review']);
 
 const statusProgressApplications = {
-  action_required: {
+  rejected: {
     applicationId: 'BRK-2026-0001',
     submittedAt: '2026-06-24 09:30',
-    progressStatus: 'action_required',
-    statusLabel: 'Action Required / 需补充资料',
+    progressStatus: 'rejected',
+    statusLabel: 'Rejected / 已拒绝',
   },
   under_review: {
     applicationId: 'BRK-2026-0001',
     submittedAt: '2026-06-24 09:30',
     progressStatus: 'under_review',
     statusLabel: 'Pending Review / 审核中',
-  },
-  opening: {
-    applicationId: 'BRK-2026-0001',
-    submittedAt: '2026-06-24 09:30',
-    progressStatus: 'opening',
-    statusLabel: 'Opening in Progress / 开户中',
   },
 };
 
@@ -53,26 +47,6 @@ const supplementalDocumentRequirements = [
     acceptedFormats: 'PDF / JPG / PNG',
     maxSizeLabel: '单个文件不超过 10MB',
   },
-  {
-    id: 'w8BenSupplement',
-    name: 'W8-BEN 表格',
-    description: '请重新上传已通过第三方签署平台完成签署的 W8-BEN 表格。',
-    reason: 'W8-BEN 表格签署信息不完整，需要通过第三方签署平台完成后重新提交。',
-    categoryLabel: '第三方签署文档',
-    required: true,
-    acceptedFormats: 'PDF / JPG / PNG',
-    maxSizeLabel: '单个文件不超过 10MB',
-  },
-  {
-    id: 'crsControllingPersonSupplement',
-    name: 'CRS-Controlling Person 表格',
-    description: '请重新上传已通过第三方签署平台完成签署的 CRS-Controlling Person 表格。',
-    reason: 'CRS-Controlling Person 表格缺少完整控制人声明，需要补充完整后重新提交。',
-    categoryLabel: '第三方签署文档',
-    required: true,
-    acceptedFormats: 'PDF / JPG / PNG',
-    maxSizeLabel: '单个文件不超过 10MB',
-  },
 ];
 
 const statusAlerts = {
@@ -81,10 +55,10 @@ const statusAlerts = {
     title: '开户申请审核中',
     message: '您的开户申请正在审核中，请留意 FIDERE Trust 的后续通知。',
   },
-  action_required: {
+  rejected: {
     severity: 'warning',
-    title: '需补充资料',
-    message: '当前开户申请需要补充资料，请根据页面提示更新文件后继续提交。',
+    title: '开户申请已拒绝',
+    message: '当前开户申请已被退回，请查看拒绝原因并重新提交补充资料。',
   },
 };
 
@@ -223,7 +197,7 @@ export default function BrokerAccountOpeningPage({ accountStatus = 'not_opened' 
     );
   }
 
-  if (accountStatus === 'action_required' && statusApplication) {
+  if (accountStatus === 'rejected' && statusApplication) {
     const statusAlert = statusAlerts[accountStatus];
 
     return (

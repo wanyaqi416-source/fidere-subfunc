@@ -21,9 +21,8 @@ import BrokerAccountOpeningPage from './broker-account-opening/BrokerAccountOpen
 
 const accountStatusOptions = [
   { value: 'not_opened', label: '未开通', description: 'Not Opened' },
-  { value: 'opening', label: '开户中', description: 'Opening in Progress' },
   { value: 'under_review', label: '审核中', description: 'Under Review' },
-  { value: 'action_required', label: '需补充资料', description: 'Action Required' },
+  { value: 'rejected', label: '已拒绝', description: 'Rejected' },
   { value: 'opened', label: '开户成功', description: 'Account Opened' },
 ];
 
@@ -175,7 +174,7 @@ function Header({ accountStatus, onAccountStatusChange }) {
               Zhang Wei
             </Typography>
             <Typography sx={{ color: 'rgba(255,255,255,0.68)', fontSize: 11, fontWeight: 500, letterSpacing: 0.8 }}>
-              INDIVIDUAL ACCOUNT
+              现金账户
             </Typography>
           </Box>
           <Box sx={{ display: { xs: 'block', md: 'none' } }}>

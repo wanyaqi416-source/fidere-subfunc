@@ -26,8 +26,11 @@ test('broker documents include third-party signed tax forms', () => {
   assert.match(brokersSource, /W8-BEN 表格/);
   assert.match(brokersSource, /CRS-Controlling Person 表格/);
   assert.match(brokersSource, /第三方签署文档/);
+  assert.match(brokersSource, /templateUrl:\s*'\/templates\/sub-account-opening-form-trust\.docx'/);
+  assert.match(brokersSource, /templateLabel:\s*'模板下载'/);
   assert.doesNotMatch(brokersSource, /JCRS-Controlling Person|授权书|风险披露文件/);
   assert.match(componentsSource, /documentItem\.categoryLabel/);
+  assert.match(componentsSource, /documentItem\.templateUrl/);
 });
 
 test('fee confirmation step owns the only primary continue CTA', () => {
@@ -53,25 +56,46 @@ test('application summary is informational and does not render a next button', (
   assert.doesNotMatch(summarySource, /<Button/);
 });
 
+test('broker account type is consistently shown as cash account', () => {
+  const summarySource = extractFunction(componentsSource, 'ApplicationSummary');
+  const progressSource = extractFunction(componentsSource, 'ApplicationProgressPage');
+  const reviewSubmitSource = extractFunction(componentsSource, 'ReviewSubmitStep');
+  const sidebarSource = extractFunction(componentsSource, 'BrokerAccountSidebar');
+
+  assert.match(brokersSource, /export const accountType = '现金账户'/);
+  assert.match(appSource, /现金账户/);
+  assert.match(summarySource, /账户类型/);
+  assert.match(progressSource, /账户类型/);
+  assert.match(reviewSubmitSource, /申请人账户类型/);
+  assert.match(sidebarSource, /账户类型/);
+  assert.doesNotMatch(`${appSource}\n${brokersSource}\n${componentsSource}`, /Individual Account|INDIVIDUAL ACCOUNT/);
+});
+
 test('submitted applications render a read-only progress tracking page', () => {
   const progressSource = extractFunction(componentsSource, 'ApplicationProgressPage');
+  const reviewStepsSource = componentsSource.slice(
+    componentsSource.indexOf('const reviewProgressSteps = ['),
+    componentsSource.indexOf('const progressSteps = {'),
+  );
 
-  assert.match(pageSource, /readOnlyProgressStatuses\s*=\s*new Set\(\['under_review', 'opening'\]\)/);
+  assert.match(pageSource, /readOnlyProgressStatuses\s*=\s*new Set\(\['under_review'\]\)/);
   assert.match(pageSource, /<ApplicationProgressPage/);
   assert.doesNotMatch(pageSource, /<SuccessState/);
   assert.doesNotMatch(pageSource, /setSubmittedView/);
   assert.match(progressSource, /申请进度/);
   assert.match(componentsSource, /Pending Review \/ 审核中/);
-  assert.match(componentsSource, /Opening in Progress \/ 开户中/);
   assert.match(componentsSource, /初步审核/);
+  assert.match(reviewStepsSource, /title:\s*'初步审核'[\s\S]*?status:\s*'active'/);
+  assert.doesNotMatch(reviewStepsSource, /券商处理/);
   assert.match(componentsSource, /预计 3–7 个工作日/);
   assert.match(progressSource, /showActions/);
 });
 
-test('under review and opening statuses share the same progress timeline', () => {
-  assert.match(componentsSource, /const openingProgressSteps = \[/);
-  assert.match(componentsSource, /under_review:\s*openingProgressSteps/);
-  assert.match(componentsSource, /opening:\s*openingProgressSteps/);
+test('opening status is removed from the account status switcher', () => {
+  assert.doesNotMatch(appSource, /value:\s*'opening'/);
+  assert.doesNotMatch(appSource, /label:\s*'开户中'/);
+  assert.doesNotMatch(pageSource, /progressStatus:\s*'opening'/);
+  assert.doesNotMatch(componentsSource, /开户中/);
 });
 
 test('not opened account status owns the broker opening flow entry', () => {
@@ -83,44 +107,61 @@ test('not opened account status owns the broker opening flow entry', () => {
   assert.doesNotMatch(pageSource, /readOnlyProgressStatuses\s*=\s*new Set\(\['under_review', 'opening', 'not_opened'\]\)/);
 });
 
-test('action required status shows return reasons and supplemental resubmission', () => {
+test('rejected status shows rejection reasons and supplemental resubmission', () => {
   const actionRequiredSource = extractFunction(componentsSource, 'ActionRequiredPage');
   const actionRequiredSidebarSource = extractFunction(componentsSource, 'ActionRequiredSidebar');
 
-  assert.match(pageSource, /accountStatus === 'action_required'/);
+  assert.match(appSource, /value:\s*'rejected'/);
+  assert.match(appSource, /label:\s*'已拒绝'/);
+  assert.match(pageSource, /accountStatus === 'rejected'/);
   assert.match(pageSource, /supplementalDocumentRequirements/);
   assert.match(pageSource, /<ActionRequiredPage/);
   assert.match(pageSource, /<ActionRequiredSidebar/);
-  assert.match(actionRequiredSidebarSource, /退回原因/);
+  assert.doesNotMatch(pageSource, /w8BenSupplement|crsControllingPersonSupplement/);
+  assert.doesNotMatch(pageSource, /categoryLabel:\s*'第三方签署文档'/);
+  assert.match(actionRequiredSource, /已拒绝/);
+  assert.match(actionRequiredSidebarSource, /拒绝原因/);
   assert.match(actionRequiredSidebarSource, /处理时间线/);
   assert.doesNotMatch(actionRequiredSource, /处理时间线/);
   assert.doesNotMatch(actionRequiredSource, /ProgressStepItem/);
   assert.match(actionRequiredSource, /补充资料/);
   assert.match(actionRequiredSource, /重新提交补充资料/);
   assert.match(actionRequiredSource, /disabled=\{!allUploaded\}/);
-  assert.match(componentsSource, /title:\s*'需补充资料'/);
+  assert.match(componentsSource, /title:\s*'已拒绝'/);
   assert.match(componentsSource, /title:\s*'重新审核'/);
 });
 
 test('header exposes all broker account status preview states', () => {
   assert.match(appSource, /const \[accountStatus,\s*setAccountStatus\]\s*=\s*useState\('not_opened'\)/);
   assert.match(appSource, /value:\s*'not_opened'/);
-  assert.match(appSource, /value:\s*'opening'/);
   assert.match(appSource, /value:\s*'under_review'/);
   assert.match(appSource, /value:\s*'opened'/);
-  assert.match(appSource, /value:\s*'action_required'/);
+  assert.match(appSource, /value:\s*'rejected'/);
+  assert.doesNotMatch(appSource, /value:\s*'opening'/);
+  assert.doesNotMatch(appSource, /value:\s*'action_required'/);
   assert.match(appSource, /账户状态：\{selectedStatus\.label\}/);
 });
 
 test('opened account status renders an account overview page', () => {
   const overviewSource = extractFunction(componentsSource, 'BrokerAccountOverviewPage');
   const dashboardSource = extractFunction(componentsSource, 'BrokerAccountDashboard');
+  const sidebarSource = extractFunction(componentsSource, 'BrokerAccountSidebar');
+  const transferTableSource = extractFunction(componentsSource, 'RecentTransferTable');
 
   assert.match(pageSource, /accountStatus === 'opened'/);
   assert.match(pageSource, /<BrokerAccountOverviewPage/);
   assert.match(componentsSource, /券商账户已开通/);
-  assert.match(componentsSource, /Net Asset Value/);
+  assert.doesNotMatch(dashboardSource, /<BalanceOverview/);
+  assert.doesNotMatch(componentsSource, /BalanceMetricCard/);
+  assert.doesNotMatch(componentsSource, /Net Asset Value|Available Cash|资金余额/);
+  assert.match(dashboardSource, /<BrokerAccountSidebar account=\{account\}/);
+  assert.match(sidebarSource, /title="券商账户信息"/);
+  assert.match(sidebarSource, /信托账户关联信息/);
+  assert.match(componentsSource, /currencies:\s*'USD \/ HKD \/ CNY'/);
+  assert.equal((sidebarSource.match(/<AccountOverviewCard/g) ?? []).length, 1);
   assert.match(componentsSource, /资金划转/);
+  assert.match(transferTableSource, /latest three transfer records/);
+  assert.match(transferTableSource, /records\.slice\(0,\s*3\)/);
   assert.match(componentsSource, /FIDERE Trust 仅提供账户查看/);
   assert.doesNotMatch(dashboardSource, /<HoldingsOverviewTable/);
   assert.doesNotMatch(overviewSource, /Buy|Sell|Trade|Order|买入|卖出|下单|交易|充值|提现/);
