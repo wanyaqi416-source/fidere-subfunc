@@ -8,6 +8,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import {
   ActionRequiredPage,
+  ActionRequiredSidebar,
   ApplicationSummary,
   ApplicationProgressPage,
   BrokerAccountOverviewPage,
@@ -53,10 +54,21 @@ const supplementalDocumentRequirements = [
     maxSizeLabel: '单个文件不超过 10MB',
   },
   {
-    id: 'authorizationLetterSupplement',
-    name: '授权书签署页',
-    description: '请重新上传已签署并填写日期的授权书签署页。',
-    reason: '授权书签署页缺少签署日期，需要补充完整后重新提交。',
+    id: 'w8BenSupplement',
+    name: 'W8-BEN 表格',
+    description: '请重新上传已通过第三方签署平台完成签署的 W8-BEN 表格。',
+    reason: 'W8-BEN 表格签署信息不完整，需要通过第三方签署平台完成后重新提交。',
+    categoryLabel: '第三方签署文档',
+    required: true,
+    acceptedFormats: 'PDF / JPG / PNG',
+    maxSizeLabel: '单个文件不超过 10MB',
+  },
+  {
+    id: 'crsControllingPersonSupplement',
+    name: 'CRS-Controlling Person 表格',
+    description: '请重新上传已通过第三方签署平台完成签署的 CRS-Controlling Person 表格。',
+    reason: 'CRS-Controlling Person 表格缺少完整控制人声明，需要补充完整后重新提交。',
+    categoryLabel: '第三方签署文档',
     required: true,
     acceptedFormats: 'PDF / JPG / PNG',
     maxSizeLabel: '单个文件不超过 10MB',
@@ -260,6 +272,7 @@ export default function BrokerAccountOpeningPage({ accountStatus = 'not_opened' 
                   activeStep={activeStep}
                   submittedApplication={submittedApplication ?? statusApplication}
                 />
+                {!submittedApplication ? <ActionRequiredSidebar documents={supplementalDocumentRequirements} /> : null}
               </Stack>
             </Grid>
           </Grid>

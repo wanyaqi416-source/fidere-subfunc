@@ -357,7 +357,6 @@ export function BrokerAccountDashboard() {
           <Stack spacing={{ xs: 3, md: 3.5 }}>
             <BalanceOverview balances={account.balances} />
             <InternalTransferCard onRequestTransfer={setTransferDirection} />
-            <HoldingsOverviewTable holdings={account.holdings} />
             <RecentTransferTable records={account.transferRecords} />
           </Stack>
         </Grid>
@@ -407,7 +406,7 @@ export function BrokerAccountHero({ account }) {
                   券商账户已开通
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 720 }}>
-                  您已成功开通 Webull 微牛证券账户，可在此查看账户信息、资金余额、持仓及信托内资金划转记录。
+                  您已成功开通 Webull 微牛证券账户，可在此查看账户信息、资金余额及信托内资金划转记录。
                 </Typography>
               </Box>
               <Paper
@@ -1143,6 +1142,15 @@ export function UploadDocumentCard({ documentItem, uploadedFile, onUpload, onDel
                       sx={{ height: 22, borderRadius: 1, fontWeight: 600 }}
                     />
                   ) : null}
+                  {documentItem.categoryLabel ? (
+                    <Chip
+                      label={documentItem.categoryLabel}
+                      color="secondary"
+                      size="small"
+                      variant="outlined"
+                      sx={{ height: 22, borderRadius: 1, fontWeight: 600 }}
+                    />
+                  ) : null}
                   <Chip
                     label={isUploaded ? '已上传' : '未上传'}
                     color={isUploaded ? 'success' : 'default'}
@@ -1597,51 +1605,32 @@ export function ReviewSubmitStep({
   );
 }
 
+const openingProgressSteps = [
+  {
+    title: '申请已提交',
+    status: 'completed',
+    description: 'FIDERE Trust 已收到开户申请与基础资料。',
+  },
+  {
+    title: '初步审核',
+    status: 'completed',
+    description: '基础资料已完成预审，并已进入券商处理环节。',
+  },
+  {
+    title: '券商开户中',
+    status: 'active',
+    description: '券商正在进行账户开立处理。期间无需重复提交开户资料。',
+  },
+  {
+    title: '开户完成',
+    status: 'pending',
+    description: '开户完成后，我们会更新账户开通结果与后续指引。',
+  },
+];
+
 const progressSteps = {
-  under_review: [
-    {
-      title: '申请已提交',
-      status: 'completed',
-      description: 'FIDERE Trust 已收到开户申请与基础资料。',
-    },
-    {
-      title: '初步审核',
-      status: 'active',
-      description: '团队正在核对资料完整性，并确认券商开户要求。',
-    },
-    {
-      title: '券商审核',
-      status: 'pending',
-      description: '资料通过预审后，将提交至券商进行账户开立审核。',
-    },
-    {
-      title: '开户完成',
-      status: 'pending',
-      description: '审核完成后，我们会更新账户开通结果与后续指引。',
-    },
-  ],
-  opening: [
-    {
-      title: '申请已提交',
-      status: 'completed',
-      description: 'FIDERE Trust 已收到开户申请与基础资料。',
-    },
-    {
-      title: '初步审核',
-      status: 'completed',
-      description: '基础资料已完成预审，并已进入券商处理环节。',
-    },
-    {
-      title: '券商开户中',
-      status: 'active',
-      description: '券商正在进行账户开立处理。期间无需重复提交开户资料。',
-    },
-    {
-      title: '开户完成',
-      status: 'pending',
-      description: '开户完成后，我们会更新账户开通结果与后续指引。',
-    },
-  ],
+  under_review: openingProgressSteps,
+  opening: openingProgressSteps,
   action_required: [
     {
       title: '申请已提交',
@@ -1789,87 +1778,85 @@ export function ActionRequiredPage({
         </CardContent>
       </Card>
 
-      <Grid container spacing={3} alignItems="flex-start">
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Stack spacing={3}>
-            <Paper variant="outlined" sx={(theme) => ({ p: theme.spacing(2.5), borderRadius: 2 })}>
-              <Stack spacing={2}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  退回原因
-                </Typography>
-                <Divider />
-                {documents.map((documentItem) => (
-                  <Box key={documentItem.id}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {documentItem.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {documentItem.reason}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            </Paper>
+      <Stack spacing={2.5}>
+        <Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            补充资料
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {selectedBroker.name} 当前需要补充 {documents.length} 项资料。全部上传后即可重新提交审核。
+          </Typography>
+        </Box>
 
-            <Paper variant="outlined" sx={(theme) => ({ p: theme.spacing(2.5), borderRadius: 2 })}>
-              <Stack spacing={2.5}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  处理时间线
-                </Typography>
-                {progressSteps.action_required.map((step, index) => (
-                  <ProgressStepItem key={step.title} step={step} index={index} />
-                ))}
-              </Stack>
-            </Paper>
-          </Stack>
-        </Grid>
+        <Stack spacing={2}>
+          {documents.map((documentItem) => (
+            <UploadDocumentCard
+              key={documentItem.id}
+              documentItem={documentItem}
+              uploadedFile={uploadedDocuments[documentItem.id]}
+              onUpload={onUpload}
+              onDelete={onDelete}
+            />
+          ))}
+        </Stack>
 
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Stack spacing={2.5}>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                补充资料
+        <Paper
+          variant="outlined"
+          sx={(theme) => ({
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: { xs: 'stretch', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            p: theme.spacing(2),
+            borderRadius: 1,
+            bgcolor: theme.palette.background.paper,
+          })}
+        >
+          <Typography variant="body2" color="text.secondary">
+            已上传 {completedCount}/{documents.length} 项补充资料
+          </Typography>
+          <Button variant="contained" disabled={!allUploaded} onClick={onSubmit} sx={submitButtonSx}>
+            重新提交补充资料
+          </Button>
+        </Paper>
+      </Stack>
+    </Stack>
+  );
+}
+
+export function ActionRequiredSidebar({ documents }) {
+  return (
+    <Stack spacing={3}>
+      <Paper variant="outlined" sx={(theme) => ({ p: theme.spacing(2.5), borderRadius: 2 })}>
+        <Stack spacing={2}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            退回原因
+          </Typography>
+          <Divider />
+          {documents.map((documentItem) => (
+            <Box key={documentItem.id}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {documentItem.name}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {selectedBroker.name} 当前需要补充 {documents.length} 项资料。全部上传后即可重新提交审核。
+                {documentItem.reason}
               </Typography>
             </Box>
+          ))}
+        </Stack>
+      </Paper>
 
-            <Stack spacing={2}>
-              {documents.map((documentItem) => (
-                <UploadDocumentCard
-                  key={documentItem.id}
-                  documentItem={documentItem}
-                  uploadedFile={uploadedDocuments[documentItem.id]}
-                  onUpload={onUpload}
-                  onDelete={onDelete}
-                />
-              ))}
-            </Stack>
-
-            <Paper
-              variant="outlined"
-              sx={(theme) => ({
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: { xs: 'stretch', sm: 'center' },
-                flexDirection: { xs: 'column', sm: 'row' },
-                gap: 2,
-                p: theme.spacing(2),
-                borderRadius: 1,
-                bgcolor: theme.palette.background.paper,
-              })}
-            >
-              <Typography variant="body2" color="text.secondary">
-                已上传 {completedCount}/{documents.length} 项补充资料
-              </Typography>
-              <Button variant="contained" disabled={!allUploaded} onClick={onSubmit} sx={submitButtonSx}>
-                重新提交补充资料
-              </Button>
-            </Paper>
-          </Stack>
-        </Grid>
-      </Grid>
+      <Paper variant="outlined" sx={(theme) => ({ p: theme.spacing(2.5), borderRadius: 2 })}>
+        <Stack spacing={2.5}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            处理时间线
+          </Typography>
+          {progressSteps.action_required.map((step, index) => (
+            <ProgressStepItem key={step.title} step={step} index={index} />
+          ))}
+        </Stack>
+      </Paper>
     </Stack>
   );
 }
