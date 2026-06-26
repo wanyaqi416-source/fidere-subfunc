@@ -103,8 +103,39 @@ test('not opened account status owns the broker opening flow entry', () => {
   assert.match(appSource, /label:\s*'未开通'/);
   assert.match(appSource, /const \[accountStatus,\s*setAccountStatus\]\s*=\s*useState\('not_opened'\)/);
   assert.match(pageSource, /BrokerAccountOpeningPage\(\{ accountStatus = 'not_opened' \}\)/);
+  assert.doesNotMatch(pageSource, /accountStatus === 'not_opened' && !isOpeningFlow/);
+  assert.doesNotMatch(pageSource, /<BrokerAccountListPage accounts=\{\[\]\}/);
   assert.match(pageSource, /const \[activeStep,\s*setActiveStep\]\s*=\s*useState\(0\)/);
+  assert.match(pageSource, /<BrokerStepper activeStep=\{activeStep\}/);
   assert.doesNotMatch(pageSource, /readOnlyProgressStatuses\s*=\s*new Set\(\['under_review', 'opening', 'not_opened'\]\)/);
+});
+
+test('broker account entry renders a selectable account list first', () => {
+  const listSource = extractFunction(componentsSource, 'BrokerAccountListPage');
+  const dashboardSource = extractFunction(componentsSource, 'BrokerAccountDashboard');
+
+  assert.match(pageSource, /accountStatus === 'opened'/);
+  assert.match(pageSource, /const \[selectedAccount,\s*setSelectedAccount\]\s*=\s*useState\(null\)/);
+  assert.match(pageSource, /<BrokerAccountListPage/);
+  assert.match(pageSource, /accounts=\{brokerAccountRecords\}/);
+  assert.match(pageSource, /selectedAccount \?/);
+  assert.match(pageSource, /<BrokerAccountDashboard account=\{selectedAccount\}/);
+  assert.doesNotMatch(listSource, /我的券商账户/);
+  assert.match(listSource, /accounts\.length === 0/);
+  assert.match(listSource, /暂无已开通券商账户/);
+  assert.match(listSource, /立即开通券商账户/);
+  assert.match(listSource, /accountsByBrokerId = new Map/);
+  assert.match(listSource, /brokers\.map/);
+  assert.match(listSource, /size=\{\{ xs: 12 \}\}/);
+  assert.doesNotMatch(listSource, /size=\{\{ xs: 12, md: 6 \}\}/);
+  assert.match(componentsSource, /查看详情/);
+  assert.doesNotMatch(listSource, /资金互转/);
+  assert.match(componentsSource, /券商账户号码/);
+  assert.match(componentsSource, /未开通/);
+  assert.match(componentsSource, /brokerId:\s*'ibkr'/);
+  assert.match(componentsSource, /brokerId:\s*'webull'/);
+  assert.match(dashboardSource, /返回账户列表/);
+  assert.doesNotMatch(pageSource, /<BrokerAccountOverviewPage/);
 });
 
 test('rejected status shows rejection reasons and supplemental resubmission', () => {
@@ -142,14 +173,16 @@ test('header exposes all broker account status preview states', () => {
   assert.match(appSource, /账户状态：\{selectedStatus\.label\}/);
 });
 
-test('opened account status renders an account overview page', () => {
-  const overviewSource = extractFunction(componentsSource, 'BrokerAccountOverviewPage');
+test('opened broker account detail renders an account overview page', () => {
   const dashboardSource = extractFunction(componentsSource, 'BrokerAccountDashboard');
   const sidebarSource = extractFunction(componentsSource, 'BrokerAccountSidebar');
   const transferTableSource = extractFunction(componentsSource, 'RecentTransferTable');
+  const transferCardSource = extractFunction(componentsSource, 'InternalTransferCard');
+  const transferDialogSource = extractFunction(componentsSource, 'TransferRequestDialog');
+  const heroSource = extractFunction(componentsSource, 'BrokerAccountHero');
 
   assert.match(pageSource, /accountStatus === 'opened'/);
-  assert.match(pageSource, /<BrokerAccountOverviewPage/);
+  assert.match(pageSource, /<BrokerAccountDashboard account=\{selectedAccount\}/);
   assert.match(componentsSource, /券商账户已开通/);
   assert.doesNotMatch(dashboardSource, /<BalanceOverview/);
   assert.doesNotMatch(componentsSource, /BalanceMetricCard/);
@@ -160,11 +193,48 @@ test('opened account status renders an account overview page', () => {
   assert.match(componentsSource, /currencies:\s*'USD \/ HKD \/ CNY'/);
   assert.equal((sidebarSource.match(/<AccountOverviewCard/g) ?? []).length, 1);
   assert.match(componentsSource, /资金划转/);
+  assert.doesNotMatch(heroSource, /资金互转/);
+  assert.match(transferCardSource, /onRequestTransfer\('trustToBroker'\)/);
+  assert.match(transferCardSource, /onRequestTransfer\('brokerToTrust'\)/);
+  assert.match(dashboardSource, /<InternalTransferCard onRequestTransfer=\{setTransferDirection\}/);
+  assert.match(dashboardSource, /<TransferRequestDialog/);
+  assert.match(dashboardSource, /account=\{account\}/);
+  assert.match(dashboardSource, /initialDirection=\{transferDirection \?\? 'trustToBroker'\}/);
+  assert.match(dashboardSource, /资金互转申请已提交，请等待审核/);
+  assert.match(transferDialogSource, /maxWidth="md"/);
+  assert.match(transferDialogSource, /dialogTitle = directionType === 'trustToBroker'/);
+  assert.match(transferDialogSource, /从信托账户转入券商账户/);
+  assert.match(transferDialogSource, /从券商账户转出至信托账户/);
+  assert.doesNotMatch(transferDialogSource, /<DialogTitle[\s\S]{0,80}>资金互转申请/);
+  assert.match(transferDialogSource, /directionType = initialDirection === 'brokerToTrust'/);
+  assert.doesNotMatch(transferDialogSource, /setDirectionType/);
+  assert.match(transferDialogSource, /label="付款账户"/);
+  assert.match(transferDialogSource, /label="收款账户"/);
+  assert.doesNotMatch(transferDialogSource, /付款账户类型/);
+  assert.doesNotMatch(transferDialogSource, /收款账户类型/);
+  assert.doesNotMatch(transferDialogSource, /label="收款账户" value="FIDERE Trust 信托账户"/);
+  assert.match(componentsSource, /香港账户/);
+  assert.match(componentsSource, /美国账户/);
+  assert.match(transferDialogSource, /brokerName\.replace\(\/\\s\+\/g,\s*''\)/);
+  assert.match(transferDialogSource, /brokerAccountLabel/);
+  assert.match(transferDialogSource, /券商账户号码/);
+  assert.match(transferDialogSource, /variant="filled"/);
+  assert.match(transferDialogSource, /disableUnderline:\s*true/);
+  assert.match(transferDialogSource, /sx=\{brokerReadonlyFieldSx\}/);
+  assert.match(
+    transferDialogSource,
+    /directionType === 'trustToBroker'[\s\S]*label="金额"[\s\S]*directionType === 'trustToBroker'[\s\S]*label="收款账户"[\s\S]*label="券商账户号码"/,
+  );
+  assert.match(componentsSource, /const brokerReadonlyFieldSx/);
+  assert.match(transferDialogSource, /availableCurrencies/);
+  assert.match(transferDialogSource, /预计到账金额/);
+  assert.match(transferDialogSource, /请输入大于 0 的金额/);
+  assert.match(transferDialogSource, /提交审核/);
   assert.match(transferTableSource, /latest three transfer records/);
   assert.match(transferTableSource, /records\.slice\(0,\s*3\)/);
   assert.match(componentsSource, /FIDERE Trust 仅提供账户查看/);
   assert.doesNotMatch(dashboardSource, /<HoldingsOverviewTable/);
-  assert.doesNotMatch(overviewSource, /Buy|Sell|Trade|Order|买入|卖出|下单|交易|充值|提现/);
+  assert.doesNotMatch(dashboardSource, /Buy|Sell|Trade|Order|买入|卖出|下单|交易|充值|提现/);
 });
 
 test('confirmation checkbox controls align with their labels', () => {

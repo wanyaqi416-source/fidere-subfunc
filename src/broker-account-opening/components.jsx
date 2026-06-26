@@ -38,7 +38,7 @@ import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined
 import OpenInNew from '@mui/icons-material/OpenInNew';
 import QueryBuilder from '@mui/icons-material/QueryBuilder';
 import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined';
-import { accountType, brokerDocumentRequirements, brokerSteps } from './brokers';
+import { accountType, brokerDocumentRequirements, brokerSteps, brokers } from './brokers';
 
 const buttonSx = {
   height: 40,
@@ -149,87 +149,118 @@ function MetaChips({ title, values }) {
   );
 }
 
-const brokerAccountDashboardData = {
-  brokerName: 'Webull 微牛证券',
-  accountName: 'Webull Securities Account',
-  accountNumber: 'WB-****-2841',
-  accountStatus: 'Active',
-  accountType,
-  currencies: 'USD / HKD / CNY',
-  openedAt: '2026-06-22',
-  updatedAt: '2026-06-22 10:30',
-  trustAccount: 'FIDERE Trust Account',
-  trustRelation: '该券商账户已与您的 FIDERE Trust 信托账户完成关联，用于账户信息查看与内部资金划转申请。',
-  holdings: [
-    {
-      securityName: 'Apple Inc.',
-      ticker: 'AAPL',
-      market: 'NASDAQ',
-      quantity: '20',
-      marketValue: 'USD 4,200.00',
-      cost: 'USD 3,880.00',
-      unrealizedPl: '+USD 320.00',
-      allocation: '3.35%',
-    },
-    {
-      securityName: 'SPDR S&P 500 ETF',
-      ticker: 'SPY',
-      market: 'NYSE',
-      quantity: '15',
-      marketValue: 'USD 7,800.00',
-      cost: 'USD 7,260.00',
-      unrealizedPl: '+USD 540.00',
-      allocation: '6.22%',
-    },
-    {
-      securityName: 'US Treasury Bill',
-      ticker: 'T-Bill',
-      market: 'Fixed Income',
-      quantity: '50,000',
-      marketValue: 'USD 49,820.00',
-      cost: 'USD 50,000.00',
-      unrealizedPl: '-USD 180.00',
-      allocation: '39.72%',
-    },
-  ],
-  transferRecords: [
-    {
-      date: '2026-06-20',
-      type: 'Transfer In',
-      sourceAccount: 'FIDERE Trust Account',
-      targetAccount: 'Webull Account',
-      currency: 'USD',
-      amount: '50,000.00',
-      status: 'Completed',
-      reference: 'FT-WB-20260620-001',
-    },
-    {
-      date: '2026-06-18',
-      type: 'Transfer Out',
-      sourceAccount: 'Webull Account',
-      targetAccount: 'FIDERE Trust Account',
-      currency: 'USD',
-      amount: '10,000.00',
-      status: 'Processing',
-      reference: 'WB-FT-20260618-002',
-    },
-  ],
+const sharedTransferRecords = [
+  {
+    date: '2026-06-20',
+    type: 'Transfer In',
+    sourceAccount: 'FIDERE Trust Account',
+    targetAccount: '券商账户',
+    currency: 'USD',
+    amount: '50,000.00',
+    status: 'Completed',
+    reference: 'FT-BR-20260620-001',
+  },
+  {
+    date: '2026-06-18',
+    type: 'Transfer Out',
+    sourceAccount: '券商账户',
+    targetAccount: 'FIDERE Trust Account',
+    currency: 'USD',
+    amount: '10,000.00',
+    status: 'Processing',
+    reference: 'BR-FT-20260618-002',
+  },
+  {
+    date: '2026-06-12',
+    type: 'Transfer In',
+    sourceAccount: 'FIDERE Trust Account',
+    targetAccount: '券商账户',
+    currency: 'HKD',
+    amount: '80,000.00',
+    status: 'Completed',
+    reference: 'FT-BR-20260612-003',
+  },
+  {
+    date: '2026-06-05',
+    type: 'Transfer In',
+    sourceAccount: 'FIDERE Trust Account',
+    targetAccount: '券商账户',
+    currency: 'CNY',
+    amount: '120,000.00',
+    status: 'Completed',
+    reference: 'FT-BR-20260605-004',
+  },
+];
+
+export const brokerAccountRecords = [
+  {
+    brokerId: 'ibkr',
+    brokerName: 'IBKR 盈透证券',
+    accountName: 'IBKR Securities Account',
+    accountNumber: 'IBKR-****-6118',
+    accountStatus: 'Active / 已开通',
+    accountType,
+    currencies: 'USD / HKD / CNY',
+    openedAt: '2026-06-18',
+    updatedAt: '2026-06-22 09:40',
+    trustAccount: 'FIDERE Trust Account',
+    trustRelation: '该券商账户已与您的 FIDERE Trust 信托账户完成关联，用于账户信息查看与内部资金划转申请。',
+    transferAccountLabel: 'IBKR Account',
+    transferRecords: sharedTransferRecords.map((record) => ({
+      ...record,
+      targetAccount: record.targetAccount === '券商账户' ? 'IBKR Account' : record.targetAccount,
+      sourceAccount: record.sourceAccount === '券商账户' ? 'IBKR Account' : record.sourceAccount,
+      reference: record.reference.replace('BR', 'IB'),
+    })),
+  },
+  {
+    brokerId: 'webull',
+    brokerName: 'Webull 微牛证券',
+    accountName: 'Webull Securities Account',
+    accountNumber: 'WB-****-2841',
+    accountStatus: 'Active / 已开通',
+    accountType,
+    currencies: 'USD / HKD / CNY',
+    openedAt: '2026-06-22',
+    updatedAt: '2026-06-22 10:30',
+    trustAccount: 'FIDERE Trust Account',
+    trustRelation: '该券商账户已与您的 FIDERE Trust 信托账户完成关联，用于账户信息查看与内部资金划转申请。',
+    transferAccountLabel: 'Webull Account',
+    transferRecords: sharedTransferRecords.map((record) => ({
+      ...record,
+      targetAccount: record.targetAccount === '券商账户' ? 'Webull Account' : record.targetAccount,
+      sourceAccount: record.sourceAccount === '券商账户' ? 'Webull Account' : record.sourceAccount,
+      reference: record.reference.replace('BR', 'WB'),
+    })),
+  },
+];
+
+const trustAccountCurrencyOptions = {
+  香港账户: ['USD', 'HKD', 'CNY'],
+  美国账户: ['USD'],
 };
 
-const transferDirections = {
-  trustToBroker: {
-    title: '从信托账户转入券商账户',
-    helper: 'Transfer In from Trust Account',
-    sourceAccount: 'FIDERE Trust Account',
-    targetAccount: 'Webull Account',
+const brokerReadonlyFieldSx = (theme) => ({
+  '& .MuiFilledInput-root': {
+    borderRadius: 1.5,
+    bgcolor: alpha(theme.palette.primary.main, 0.08),
+    boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.26)}`,
+    '&:hover': {
+      bgcolor: alpha(theme.palette.primary.main, 0.1),
+    },
+    '&.Mui-focused': {
+      bgcolor: alpha(theme.palette.primary.main, 0.1),
+      boxShadow: `inset 0 0 0 1px ${theme.palette.primary.main}`,
+    },
   },
-  brokerToTrust: {
-    title: '从券商账户转出至信托账户',
-    helper: 'Transfer Out to Trust Account',
-    sourceAccount: 'Webull Account',
-    targetAccount: 'FIDERE Trust Account',
+  '& .MuiFilledInput-input': {
+    fontWeight: 700,
+    color: theme.palette.text.primary,
   },
-};
+  '& .MuiInputLabel-root': {
+    fontWeight: 700,
+  },
+});
 
 const dashboardCardSx = {
   borderRadius: 2,
@@ -303,12 +334,156 @@ function getRecordStatusChipProps(status) {
   return { color: 'primary', variant: 'outlined' };
 }
 
-export function BrokerAccountDashboard() {
-  const [transferDirection, setTransferDirection] = React.useState(null);
-  const account = brokerAccountDashboardData;
+function BrokerAccountListCard({ broker, account, onViewAccount, onOpenAccount }) {
+  const isOpened = Boolean(account);
+
+  return (
+    <Card
+      variant="outlined"
+      onClick={isOpened ? () => onViewAccount(account) : undefined}
+      sx={(theme) => ({
+        ...dashboardCardSx,
+        height: '100%',
+        cursor: isOpened ? 'pointer' : 'default',
+        transition: theme.transitions.create(['border-color', 'box-shadow', 'transform'], {
+          duration: theme.transitions.duration.short,
+        }),
+        '&:hover': isOpened
+          ? {
+              borderColor: alpha(theme.palette.primary.main, 0.42),
+              boxShadow: theme.shadows[2],
+              transform: 'translateY(-1px)',
+            }
+          : undefined,
+      })}
+    >
+      <CardContent sx={dashboardCardContentSx}>
+        <Stack spacing={2.5} sx={{ height: '100%' }}>
+          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {broker.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {broker.description}
+              </Typography>
+            </Box>
+            <Chip
+              size="small"
+              color={isOpened ? 'success' : 'default'}
+              variant={isOpened ? 'filled' : 'outlined'}
+              label={isOpened ? account.accountStatus : '未开通'}
+              sx={{ height: 24, flexShrink: 0, fontWeight: 700 }}
+            />
+          </Stack>
+
+          <Divider />
+
+          <Stack spacing={1.5}>
+            <SummaryRow label="账户类型" value={accountType} />
+            <SummaryRow label="券商账户号码" value={account?.accountNumber ?? '--'} />
+            <SummaryRow label="结算币种" value={account?.currencies ?? '--'} />
+            <SummaryRow label="开户日期" value={account?.openedAt ?? '--'} />
+            <SummaryRow label="更新时间" value={account?.updatedAt ?? '--'} />
+          </Stack>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mt: 'auto' }}>
+            {isOpened ? (
+              <Button
+                variant="contained"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onViewAccount(account);
+                }}
+                sx={{ ...buttonSx, minWidth: 120 }}
+              >
+                查看详情
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={() => onOpenAccount(broker.id)}
+                sx={{ ...buttonSx, minWidth: 144 }}
+              >
+                立即开通
+              </Button>
+            )}
+          </Stack>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function BrokerAccountListPage({ accounts, onOpenAccount, onViewAccount }) {
+  const accountsByBrokerId = new Map(accounts.map((account) => [account.brokerId, account]));
 
   return (
     <Stack spacing={{ xs: 3, md: 3.5 }}>
+      {accounts.length === 0 ? (
+        <Paper
+          variant="outlined"
+          sx={(theme) => ({
+            p: { xs: theme.spacing(3), md: theme.spacing(4) },
+            borderRadius: 2,
+            bgcolor: alpha(theme.palette.primary.main, 0.025),
+          })}
+        >
+          <Stack spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} textAlign={{ xs: 'left', sm: 'center' }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              暂无已开通券商账户
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 620 }}>
+              当前尚未开通 IBKR 或 Webull 券商账户。您可以先选择一家券商提交开户申请；同一家券商仅允许保留一个有效账户。
+            </Typography>
+            <Button variant="contained" onClick={() => onOpenAccount()} sx={{ ...buttonSx, minWidth: 168 }}>
+              立即开通券商账户
+            </Button>
+          </Stack>
+        </Paper>
+      ) : null}
+
+      <Grid container spacing={3}>
+        {brokers.map((broker) => (
+          <Grid key={broker.id} size={{ xs: 12 }}>
+            <BrokerAccountListCard
+              broker={broker}
+              account={accountsByBrokerId.get(broker.id)}
+              onViewAccount={onViewAccount}
+              onOpenAccount={onOpenAccount}
+            />
+          </Grid>
+        ))}
+      </Grid>
+    </Stack>
+  );
+}
+
+export function BrokerAccountDashboard({ account, onBackToList }) {
+  const [transferDirection, setTransferDirection] = React.useState(null);
+  const [transferSubmitted, setTransferSubmitted] = React.useState(false);
+
+  const handleSubmitTransfer = () => {
+    setTransferDirection(null);
+    setTransferSubmitted(true);
+  };
+
+  return (
+    <Stack spacing={{ xs: 3, md: 3.5 }}>
+      {onBackToList ? (
+        <Box>
+          <Button variant="outlined" onClick={onBackToList} sx={{ ...buttonSx, minWidth: 132 }}>
+            返回账户列表
+          </Button>
+        </Box>
+      ) : null}
+
+      {transferSubmitted ? (
+        <Alert severity="success" onClose={() => setTransferSubmitted(false)}>
+          资金互转申请已提交，请等待审核
+        </Alert>
+      ) : null}
+
       <BrokerAccountHero account={account} />
 
       <Grid container spacing={{ xs: 3, md: 3.5 }} alignItems="flex-start">
@@ -322,16 +497,14 @@ export function BrokerAccountDashboard() {
       </Grid>
 
       <TransferRequestDialog
-        direction={transferDirection ? transferDirections[transferDirection] : null}
+        account={account}
+        initialDirection={transferDirection ?? 'trustToBroker'}
         open={Boolean(transferDirection)}
         onClose={() => setTransferDirection(null)}
+        onSubmit={handleSubmitTransfer}
       />
     </Stack>
   );
-}
-
-export function BrokerAccountOverviewPage() {
-  return <BrokerAccountDashboard />;
 }
 
 export function BrokerAccountHero({ account }) {
@@ -361,7 +534,7 @@ export function BrokerAccountHero({ account }) {
                   券商账户已开通
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 720 }}>
-                  您已成功开通 Webull 微牛证券账户，可在此查看账户信息与信托内资金划转记录。
+                  您已成功开通 {account.brokerName} 账户，可在此查看账户信息与信托内资金划转记录。
                 </Typography>
               </Box>
               <Paper
@@ -578,45 +751,206 @@ export function BrokerAccountSidebar({ account }) {
   );
 }
 
-export function TransferRequestDialog({ direction, open, onClose }) {
+export function TransferRequestDialog({ account, initialDirection = 'trustToBroker', open, onClose, onSubmit }) {
+  const directionType = initialDirection === 'brokerToTrust' ? 'brokerToTrust' : 'trustToBroker';
+  const [trustAccountType, setTrustAccountType] = React.useState('香港账户');
   const [currency, setCurrency] = React.useState('USD');
+  const [amount, setAmount] = React.useState('');
+  const [purpose, setPurpose] = React.useState('');
+  const [amountTouched, setAmountTouched] = React.useState(false);
+
+  const brokerCurrencies = React.useMemo(() => {
+    return (account?.currencies ?? 'USD')
+      .split('/')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }, [account]);
+
+  const availableCurrencies = React.useMemo(() => {
+    const trustCurrencies = trustAccountCurrencyOptions[trustAccountType] ?? [];
+    const sharedCurrencies = brokerCurrencies.filter((item) => trustCurrencies.includes(item));
+    return sharedCurrencies.length > 0 ? sharedCurrencies : ['USD'];
+  }, [brokerCurrencies, trustAccountType]);
+
+  const amountValue = Number(amount);
+  const amountInvalid = amountTouched && (!amount || Number.isNaN(amountValue) || amountValue <= 0);
+  const estimatedAmount =
+    amount && !Number.isNaN(amountValue) && amountValue > 0 ? `${currency} ${amountValue.toFixed(2)}` : `${currency} 0.00`;
+  const brokerAccountLabel = account ? `${account.brokerName.replace(/\s+/g, '')}账户` : '当前券商账户';
+  const dialogTitle = directionType === 'trustToBroker' ? '从信托账户转入券商账户' : '从券商账户转出至信托账户';
 
   React.useEffect(() => {
-    if (open) setCurrency('USD');
-  }, [open]);
+    if (!open) return;
+    setTrustAccountType('香港账户');
+    setAmount('');
+    setPurpose('');
+    setAmountTouched(false);
+  }, [initialDirection, open]);
+
+  React.useEffect(() => {
+    if (!availableCurrencies.includes(currency)) {
+      setCurrency(availableCurrencies[0]);
+    }
+  }, [availableCurrencies, currency]);
+
+  const handleSubmit = () => {
+    setAmountTouched(true);
+    if (!amount || Number.isNaN(amountValue) || amountValue <= 0) return;
+    onSubmit?.({
+      brokerId: account?.brokerId,
+      directionType,
+      trustAccountType,
+      currency,
+      amount,
+      purpose,
+    });
+  };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ pb: 1 }}>资金划转申请</DialogTitle>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle sx={{ pb: 1 }}>{dialogTitle}</DialogTitle>
       <DialogContent>
-        <Stack spacing={2.25} sx={{ pt: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            {direction?.title ?? '内部资金划转'} · {direction?.helper ?? ''}
-          </Typography>
-          <TextField label="来源账户" value={direction?.sourceAccount ?? ''} fullWidth InputProps={{ readOnly: true }} />
-          <TextField label="目标账户" value={direction?.targetAccount ?? ''} fullWidth InputProps={{ readOnly: true }} />
-          <FormControl fullWidth>
-            <InputLabel id="transfer-currency-label">币种</InputLabel>
-            <Select
-              labelId="transfer-currency-label"
-              value={currency}
-              label="币种"
-              onChange={(event) => setCurrency(event.target.value)}
-            >
-              <MenuItem value="USD">USD</MenuItem>
-              <MenuItem value="HKD">HKD</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField label="金额" fullWidth placeholder="0.00" inputMode="decimal" />
-          <TextField label="用途说明" fullWidth multiline minRows={3} placeholder="请填写本次内部资金划转用途" />
+        <Stack spacing={2.5} sx={{ pt: 1 }}>
+          <Grid container spacing={2}>
+            {directionType === 'trustToBroker' ? (
+              <>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="payer-trust-account-label">付款账户</InputLabel>
+                    <Select
+                      labelId="payer-trust-account-label"
+                      value={trustAccountType}
+                      label="付款账户"
+                      onChange={(event) => setTrustAccountType(event.target.value)}
+                    >
+                      {Object.keys(trustAccountCurrencyOptions).map((item) => (
+                        <MenuItem key={item} value={item}>
+                          {item}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </>
+            ) : (
+              <>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="付款账户"
+                    value={brokerAccountLabel}
+                    fullWidth
+                    variant="filled"
+                    InputProps={{ readOnly: true, disableUnderline: true }}
+                    sx={brokerReadonlyFieldSx}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="券商账户号码"
+                    value={account?.accountNumber ?? ''}
+                    fullWidth
+                    variant="filled"
+                    InputProps={{ readOnly: true, disableUnderline: true }}
+                    sx={brokerReadonlyFieldSx}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="receiver-trust-account-label">收款账户</InputLabel>
+                    <Select
+                      labelId="receiver-trust-account-label"
+                      value={trustAccountType}
+                      label="收款账户"
+                      onChange={(event) => setTrustAccountType(event.target.value)}
+                    >
+                      {Object.keys(trustAccountCurrencyOptions).map((item) => (
+                        <MenuItem key={item} value={item}>
+                          {item}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </>
+            )}
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel id="transfer-currency-label">币种</InputLabel>
+                <Select
+                  labelId="transfer-currency-label"
+                  value={currency}
+                  label="币种"
+                  onChange={(event) => setCurrency(event.target.value)}
+                >
+                  {availableCurrencies.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                label="金额"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                onBlur={() => setAmountTouched(true)}
+                error={amountInvalid}
+                helperText={amountInvalid ? '请输入大于 0 的金额' : ' '}
+                fullWidth
+                placeholder="0.00"
+                inputMode="decimal"
+              />
+            </Grid>
+            {directionType === 'trustToBroker' ? (
+              <>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="收款账户"
+                    value={brokerAccountLabel}
+                    fullWidth
+                    variant="filled"
+                    InputProps={{ readOnly: true, disableUnderline: true }}
+                    sx={brokerReadonlyFieldSx}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="券商账户号码"
+                    value={account?.accountNumber ?? ''}
+                    fullWidth
+                    variant="filled"
+                    InputProps={{ readOnly: true, disableUnderline: true }}
+                    sx={brokerReadonlyFieldSx}
+                  />
+                </Grid>
+              </>
+            ) : null}
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label="转账用途"
+                value={purpose}
+                onChange={(event) => setPurpose(event.target.value)}
+                fullWidth
+                multiline
+                minRows={3}
+                placeholder="请填写本次资金互转用途"
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField label="预计到账金额" value={estimatedAmount} fullWidth InputProps={{ readOnly: true }} />
+            </Grid>
+          </Grid>
         </Stack>
       </DialogContent>
       <DialogActions sx={(theme) => ({ px: theme.spacing(3), pb: theme.spacing(3), gap: 1.5 })}>
         <Button variant="outlined" onClick={onClose} sx={buttonSx}>
           取消
         </Button>
-        <Button variant="contained" onClick={onClose} sx={{ ...buttonSx, minWidth: 132 }}>
-          提交划转申请
+        <Button variant="contained" onClick={handleSubmit} sx={{ ...buttonSx, minWidth: 132 }}>
+          提交审核
         </Button>
       </DialogActions>
     </Dialog>

@@ -11,7 +11,9 @@ import {
   ActionRequiredSidebar,
   ApplicationSummary,
   ApplicationProgressPage,
-  BrokerAccountOverviewPage,
+  BrokerAccountListPage,
+  BrokerAccountDashboard,
+  brokerAccountRecords,
   BrokerCard,
   BrokerStepper,
   DocumentUploadStep,
@@ -83,6 +85,7 @@ export default function BrokerAccountOpeningPage({ accountStatus = 'not_opened' 
   const [uploadedDocuments, setUploadedDocuments] = useState({});
   const [submitConfirmed, setSubmitConfirmed] = useState(false);
   const [submittedApplication, setSubmittedApplication] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState(null);
 
   const selectedBroker = useMemo(
     () => brokers.find((broker) => broker.id === selectedBrokerId) ?? null,
@@ -167,6 +170,15 @@ export default function BrokerAccountOpeningPage({ accountStatus = 'not_opened' 
     });
   };
 
+  const handleOpenAccountFromList = (brokerId = 'webull') => {
+    setSelectedBrokerId(brokerId);
+    setActiveStep(0);
+    setFeeConfirmed(false);
+    setUploadedDocuments({});
+    setSubmitConfirmed(false);
+    setSubmittedApplication(null);
+  };
+
   const handleResubmitSupplementalDocuments = () => {
     if (!selectedBroker || !allSupplementalDocumentsUploaded) return;
     const now = new Date();
@@ -192,7 +204,15 @@ export default function BrokerAccountOpeningPage({ accountStatus = 'not_opened' 
           pb: { xs: theme.spacing(8), md: theme.spacing(7) },
         })}
       >
-        <BrokerAccountOverviewPage />
+        {selectedAccount ? (
+          <BrokerAccountDashboard account={selectedAccount} onBackToList={() => setSelectedAccount(null)} />
+        ) : (
+          <BrokerAccountListPage
+            accounts={brokerAccountRecords}
+            onOpenAccount={handleOpenAccountFromList}
+            onViewAccount={setSelectedAccount}
+          />
+        )}
       </Container>
     );
   }
